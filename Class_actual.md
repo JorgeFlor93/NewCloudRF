@@ -1,83 +1,29 @@
 Las clases definidas en la aplicación CloudRF son:
 
-##### *image-ppm.hh*<br>
-Clase: **image_dispache_table_t**<br>
-Métodos:<br>
-
-	- ppm_init
-	- ppm_add_pixel 
-	- ppm_set_pixel
-	- ppm_write
-
-Se inicializa y se crean los pixeles de las imágenes. Aquí se ha instanciado esta clase y sus respectivos métodos mientras que en **image.hh** se definen(*image_dispache_table*).
-
-##### *image.hh*<br>
-
-Clase: **image_ctx**<br>
-Atributos:<br>
-
-	- width,
-	- height, 
-	- model, 
-	- format, 
-	- initialized, 
-	- *canvas,
-	- *next_pixel, 
-	- *extension, 
-	- *dt <br>
-
-Los atributos de esta clase son usados por las clases *global-image.hh, image_dispatch_table, image_dispache_table_t*.
-
-Clase: **global-image.hh**<br>
-Métodos:<br>
-
-	image_set_format(int format)
-
-Cambia el formato por defecto de la imagen
-
-	int image_init(image_ctx_t \*ctx, const size_t width, const size_t height, const int model, const int format)
-
-Inicializa la imagen con una serie de atributos(Debe llamarse primero antes de escribir cualquier dato).<br>
-
-	 image_add_pixel, image_set_pixel, image_get_pixel, image_write, image_free
-
-Leen y escriben en un fichero. Estas funciones simplemente envuelven los métodos definidos en **image_dispache_table_t**
-
-Estos métodos vienen algo explicados en *image.cc*
-
-Manejo de la salida de la imagen. Permite mejores formatos de salida. Se define esta clase para instanciar y manipular la interfaz ya comentada *image_dispache_table*.
-
-Clase: **\<INTERFAZ\>image_dispatch_table**<br>
-Métodos:<br>
-
-	- init(image_ctx_t*), 
-	- add_pixel(image_ctx_t*,const uint8_t,const uint8_t,const uint8_t,const uint8_t)
-	- set_pixel(image_ctx_t*,const size_t,const size_t,const uint8_t,const uint8_t,const uint8_t,const uint8_t)
-	- get_pixel(image_ctx_t*,const size_t,const size_t,const uint8_t*,const uint8_t*,const uint8_t*,const uint8_t*)
-	- write(image_ctx_t*,FILE*)
-	- free(image_ctx_t*)
-	
-Estas funciones envuelven los métodos de las clase global-image.hh y image_ctx. Estos métodos no están definidos.
-Las anteriores clases realizan la construcción de la imagen bitmap, su formato RGB, resolución, y la guardan en el fichero de salida cuyo nombre proporciona el usuario.
-
 ##### *inputs.hh*<br>
 Clase: **global-inputs**<br>
 Métodos:<br>
 
 	- int LoadSDF_SDF(char \*name, int winfiles) 
-param1 archivo, param2 no se define. Se lee un fichero .sdf con información DEM y se almacenan en la primera struct dem de common.h los Elevation data, maximum and minimum elevations, and quadrangle limits.
+		   Here X lines of DEM will be read until IPPD is reached.
+		   Each .sdf tile contains 1200x1200 = 1.44M 'points'
+		   Each point is sampled for 1200 resolution!
+param1 archivo, param2 no se define. Se lee un fichero .sdf con información DEM y se almacenan en la primera struct dem disponible. Elevation data, maximum and minimum elevations, and quadrangle limits.
+Aquí se guardan en las variables globales de la clase common.h los máximos  y mínimos.
 	
 	- int LoadSDF(char \*name, int winfiles) 
 Primero llama a LoadSDF_SDF, si devuelve -1 continúa si no termina. Carga un .sdf comprimido. Si no es posible se supondrá la BTS y su propagación a nivel del mar. Devuelve 0 todo bien, -1 error o errno.
 
 	- int LoadPAT(char \*az_filename, char \*el_filename) 
-Lee PAT ficheros .az y .el. Devuelve 0 todo bien, -1 error o errno.
+		Processes antenna pattern
+Se llama en el main, cuando se lee el parámetro -o. 
+Lee ficheros azimuth y elevations. Devuelve 0 todo bien, -1 error o errno.
 	
 	- int LoadSignalColors(struct site xmtr)
 variable struct site de common.h la cual contiene entre otros el filename de ahí q no necesite pasarlo, ya lo tiene almacenado de alguna función anterior. Carga unos valores por defecto de los colores. Devuelve errno en caso de error.
 
 	- int LoadLossColors(struct site xmtr)
-Carga valores por defecto en la variable struct region de common.h. 
+Carga valores de la variable struct region de common.h. 
 
 	- int LoadDBMColors(struct site xmtr)
 Carga colores por defecto.
@@ -93,7 +39,8 @@ User-Define Terrain, carga un fichero de DEM especificado por el usuario. errno 
 param1 fichero, param2  radio para indicar el límite, param 3 struct de common.h con información del lugar de propagación. Devuelve 0 todo bien, -1 error o errno.
 	
 	- int averageHeight(int h, int w, int x, int y)
-param, altura, ancho y 2 enteros. Usa la estructura dem(máximos y mínimos de los ejes cardinales) de common.h. Devuelve la altura media de las elevaciones específicadas por DEM redondeada a un entero.
+param, altura, ancho y 2 enteros que definen las posiciones. Usa la estructura dem(máximos y mínimos de los ejes cardinales) de common.h. Devuelve la altura media de las elevaciones en torno a al punto especificado por los enteros y se devuelve redondeada.
+
 Estos métodos funcionan como herrramientas/scripts. Se ayudan de los atributos definidos en clases de diferentes ficheros: *common.h, main.hh, tiles.hh*.
 
 ##### *common.h*<br>
@@ -112,6 +59,8 @@ Atributos:
 DEM Digital elevations model. 
 
 Clase: **site**<br>
+Almacena las coordenadas de la antena transmisora.
+
 Atributos:<br>
 
 	- double lat;
@@ -121,6 +70,7 @@ Atributos:<br>
 	- char filename
 
 Clase: **path**<br>
+Aparece en las funciones de cálculo y copia de elevaciones, clutter, Azimuth.
 Atributos:<br>
 
 	- double lat
@@ -130,6 +80,7 @@ Atributos:<br>
 	- int length
 
 Clase: **LR**<br>
+Almacena atributos, parámetros de entrada.
 Atributos:
 
 	- double eps_dielect
@@ -151,6 +102,7 @@ Atributos:
 	- int levels
 
 Clase: **global-common**<br>
+Conjunto de atributos usados en la mayoría de clases para almacenar todo tipo de información y para manejar las anteriores clases definidas en este archivo.
 Atributos:
 
 	- #define DEG2RAD		1.74532925199e-02
@@ -213,37 +165,50 @@ Atributos:
 ##### *main.hh*
 
 Clase: **global-MAIN**<br>
+
+Se van analizando los parámetros de entrada, se detectan errores y se asignan las correspondencias.
+
 Métodos:<br>
 
 	- int ReduceAngle(double angle)
 Devuelve un argumento normalizado para un ángulo entero entre 0 y 180 grados.
 	
 	- double LonDiff(double lon1, double lon2) 
+		/*This function returns the short path longitudinal
+		difference between longitude1 and longitude2
+		as an angle between -180.0 and +180.0 degrees.
+		If lon1 is west of lon2, the result is positive.
+		If lon1 is east of lon2, the result is negative.*/
 Devuelve la diferencia longitudinal entre 2 longitudes como un ángulo entre -180º y 180º
 
 	- int PutMask(double lat, double lon, int value)
-Almacena en una variable struct dem[][].mask[][] información áreas de cobertura 
-
 	- int OrMask(double lat, double lon, int value)
-Igualmente. Estas dos funciones establecen y resetean los bits en la mask basándose en la long y lat del punto. Se recombinan con los datos de la topología cuando se generan los mapas topográficos al invocar la llamada de SignalServer.
-
 	- int GetMask(double lat, double lon)
-Devuelve la máscara de bits basada en lat y lon calculada en OrMask(...).
+Almacena en una variable struct dem[][].mask[][] información áreas de cobertura, en el tercer parámeretro: *int value*.
+Estas dos funciones establecen y resetean los bits en la mask basándose en la long y lat del punto. Se recombinan con los datos de la topología cuando se generan los mapas topográficos al invocar la llamada de SignalServer. Devuelve la máscara de bits basada en lat y lon calculada en OrMask(...).
 
 	- int PutSignal(double lat, double lon, unsigned char signal)
-Devuelve el valor de intensidad de señal en un punto(dem[].signal[][]) especificado en las parámetros de entrada
-
 	- unsigned char GetSignal(double lat, double lon)
-Devuelve señal PutSignal(...)
+PutSignal escribe un valor de señal entre 0-255 (que representa el valor RGB que dentrá el punto en concreto en el ppm). El tercer parámetro *unsigned char signal* almacena dicho valor en dem[indx].signal[x][y].
+GetSignal devuelve el valor de intensidad de señal en un punto(dem[].signal[][]) especificado en las parámetros de entrada.
+
 
 	- double GetElevation(struct site location)
-Obtiene la elevación dem almacenada en struct dem previamente (al cargar los archivos .sdf)
+Devuelve la elevación DEM almacenada en struct dem previamente (al cargar los archivos .sdf)
 
 	- int AddElevation(double lat, double lon, double height, int size)
+		/* This function adds a user-defined terrain feature
+		   (in meters AGL) to the digital elevation model data
+		   in memory.  Does nothing and returns 0 for locations
+		   not found in memory. */
+
 user defain terrain
 
+	- double dist(double lat1, double lon1, double lat2, double lon2)
+Mejora de la HAVERSINE FORMULA
+
 	- double Distance(struct site site1, struct site site2)
-Devuelve la distancia en millas netre 2 localizaciones
+Devuelve la distancia en millas entre 2 localizaciones en la misma esfera (HAVERSINE FORMULA)
 
 	- double Azimuth(struct site source, struct site destination)
 Devuelve el Azimuth al destino desde la fuente.
@@ -255,13 +220,13 @@ Devuelve el angulo de elevación al destino visto desde la fuente.
 Almacena en path struct una secuencia de puntos entre fuente-destino
 
 	- double ElevationAngle2(struct site source, struct site destination, double er)
-Igual q ElevationAngle() sólo q esta vez si hay un obstacula en la ruta, el ángulo es fuente-primer_obstáculo
+Igual q ElevationAngle() sólo q esta vez si hay un obstacula en la ruta, el ángulo es fuente-primer_obstáculo. *er* representa el Radiod e la tierra (earth radius)
 
 	- double ReadBearing(char \*input)
-Esta función recibe una entrada númera en forma de string  y devuelve su ángulo equivalente en grados como un número decimal. La entrada puede estar en formato decimal o en forma grado minutos segundos (70º 18' 45")
+Esta función recibe una entrada númera en forma de string(40.1463 o 40 08 23  en formato grado, minuto segundo)  y devuelve su ángulo equivalente en grados como un número decimal.
 
 	- void ObstructionAnalysis(struct site xmtr, struct site rcvr, double f, FILE \*outfile)
-Va calculando los cosenos en el path para ir analizando las obstrucciones.
+A cada punto entre tx y rx va calculando los cosenos en el path para ir analizando las obstrucciones.
 
 Estos métodos vienen algo definidas en el main.cc
 
@@ -275,34 +240,30 @@ Clase: **global-outputs**<br>
 Métodos:<br>
 
 	- void DoPathLoss(char \*filename, unsigned char geo, unsigned char kml, unsigned char ngs, struct site \*xmtr, unsigned char txsites)
-This function generates a topographic map in Portable Pix Map
-(PPM) format based on the content of flags held in the mask[][]
-array (only). 
+		This function generates a topographic map in Portable Pix Map
+		(PPM) format based on the content of flags held in the mask[][]
+		array (only). 
 Param1 fichero, param2 3 y 4 ??, param5 struct site almacena datos del lugar, param6 no se usa. 
        
 	- int DoSigStr(char \*filename, unsigned char geo, unsigned char kml, unsigned char ngs, struct site \*xmtr, unsigned char txsites); 
-		
-This function generates a topographic map in Portable Pix Map
-(PPM) format based on the signal strength values held in the
-signal[][] arrayreturn 0 correct or errno. 
+	This function generates a topographic map in Portable Pix Map
+	(PPM) format based on the signal strength values held in the
+	signal[][] arrayreturn 0 correct or errno. 
 
 	- DoRxdPwr(char \*filename, unsigned char geo, unsigned char kml, unsigned char ngs, struct site \*xmtr, unsigned char txsites):
-
-This function generates a topographic map in Portable Pix Map
-(PPM) format based on the signal power level values held in the
-signal[][] array.
+	This function generates a topographic map in Portable Pix Map
+	(PPM) format based on the signal power level values held in the
+	signal[][] array.
 Cargamos la intensidad de señal en cada punto según lo almacenado en la clase struct dem (dBm=dem[].signal[][]).
 	   
 	- void DoLOS(char \*filename, unsigned char geo, unsigned char kml, unsigned char ngs, struct site \*xmtr, unsigned char txsites); 
-
-This function generates a topographic map in Portable Pix Map
-(PPM) format based on the signal power level values held in the
-signal[][] array.
-Línea de visión (Line of sight). 
+	This function generates a topographic map in Portable Pix Map
+	(PPM) format based on the signal power level values held in the
+	signal[][] array. 
 	   
 	- void **PathReport(struct site source, struct site destination, char \*name, char graph_it, int propmodel, int pmenv, double rxGain)**
 
-Es en esta función donde se pasa el modelo de propagación y parámetros como el submodelo, radio_climate, Polarización, ganancia recibida. 
+PathReport: Es en esta función donde se pasa el modelo de propagación y parámetros como el submodelo, radio_climate, Polarización, ganancia recibida. 
 Cálcula el coseno del ángulo de elevación sobre el terreno. 
 Compara ángulos para saber si existen obstrucciones. Se le puede indicar tipo de fichero y si no se supone .png. Los modelos de propagación retornan un double con las pérdidas. 
 		
@@ -346,185 +307,71 @@ Se usa principalmente para reescalar la imagen LIDAR ya que esta solo opta a una
 
 Estructura necesaria para manejar el reescalado de las imágenes
 
-#### Model directory 
-> ALGORITHM
+##### *image-ppm.hh*<br>
+Clase: **image_dispache_table_t**<br>
 
-Clase: **cost**<br>
-Complejidad: MEDIA
-
-Atributos:<br>
-
-	- f Freq
-	- TxH Height Tx
-	- RxH Height Rx
-	- d: Propagation ratio
-	- mode (Urbano, Suburbano, rural)
-Frecuencia 150 - 2000 MHz
-
-Métodos:
-
-	- COST231pathLoss(float f, float TxH, float RxH, float d, int mode)
-
-Clase: **ecc33**<br>
-Complejidad: MEDIA
-
-Atributos:<br>
-
-	- f Freq
-	- TxH Height Tx
-	- RxH Height Rx
-	- d: Propagation ratio
-	- mode (Urbano, Suburbano, rural)
-Trabaja en GHz. Diferencia entre ciudades con grandes edificios(rascacielos) y ciudades medianas (Europeas).
-
-Métodos:
-
-	- ECC33pathLoss(float f, float TxH, float RxH, float d, int mode);
-
-Clase: **egli**<br>
-Complejidad: FACIL
-
-Atributos:<br>
-
-	- f Freq
-	- TxH Height Tx
-	- RxH Height Rx
-	- d: Propagation ratio
-	- mode (Urbano, Suburbano, rural)
-Frecuencias bajas max 1GHz. No tiene en cuentra otro tipos de pérdidas subyacentes.
-
-Métodos:
-
-	- EgliPathLoss(float f, float h1, float h2, float d);
-
-
-Clase: **ericsson**<br>
-Complejidad: MEDIA
-
-Atributos:<br>
-- f Freq
-- TxH Height Tx
-- RxH Height Rx
-- d: Propagation ratio
-- mode (Urbano, Suburbano, rural)
-
-Métodos:
-
-	- EricssonpathLoss(float f, float TxH, float RxH, float d, int mode)
-
-Clase: **fspl** (free space path loss)<br>
-Complejidad: FACIL
-
-Atributos:<br>
-
-	- f Freq
-	- d Propagation ratio
-	- mode
-Admite cualquier frecuencia y distancia
-
-Métodos:
+Atributos:
 	
-	- double FSPLpathLoss(float f, float d);
+	- image_dispatch_table_t ppm_dt
+atributo tipo image_dispatch_table_t para invocar sus métodos.
 
-
-Clase: **hata**<br>
-Complejidad: MEDIA
-
-Atributos:<br>
-
-	- f Freq
-	- TxH Height Tx
-	- RxH Height Rx
-	- d: Propagation ratio
-	- mode (Urbano, Suburbano, rural)
-150 to 1500 MHzz. Costhata model es una extensión de este modelo.
 Métodos:<br>
 
-	- double HATApathLoss(float f, float h_B, float h_M, float d, int mode);
+	- ppm_init
+	- ppm_add_pixel 
+	- ppm_set_pixel
+	- ppm_write
 
-Clase: **itwom3.0**<br>
-No se trata de un algoritmo de cálculod e propagación como tal. Define una serie de funciones 
+Se inicializa y se crean los pixeles de las imágenes. Aquí se ha instanciado esta clase y sus respectivos métodos mientras que en **image.hh** se definen(*image_dispache_table*).
 
-Atributos:
+##### *image.hh*<br>
 
-	- pol: 0-Horizontal, 1-Vertical, 2-Circular
-	- radio_climate: 1-Equatorial, 2-Continental Subtropical, 3-Maritime Tropical, 4-Desert, 5-Continental Temperate, 6-Maritime Temperate, Over Land, 7-Maritime Temperate, Over Sea.
-	- conf, rel: .01 to .99
-	- elev[]: [num points - 1], [delta dist(meters)], [height(meters) point 1], ..., [height(meters) point n]
-	- clutter_height  	25.2 meters for compatibility with ITU-R P.1546-2.
-	- clutter_density 	1.0 for compatibility with ITU-R P.1546-2.
-	- delta_h_diff		
-	    - optional delta h for beyond line of sight. 90 m. average.
-	    - setting to 0.0 will default to use of original internal
-	    - use of delta-h for beyond line-of-sight range.
-	- mode_var set to 12: or to 1 for FCC ILLR	
-	- enc_ncc_clcref: clutter refractivity; 1000 N-units to match ITU-R P.1546-2
-	- eno=eno_ns_surfref: atmospheric refractivity at sea level; 301 N-units nominal
-	- errnum: 
-	    - 0- No Error.
-	    - 1- Warning: Some parameters are nearly out of range.
-	    - Results should be used with caution.
-	    - 2- Note: Default parameters have been substituted for
-	    - impossible ones.
-	    - 3- Warning: A combination of parameters is out of range.
-	    - Results are probably invalid.
-	    - Other-  Warning: Some parameters are out of range.
-	    - Results are probably invalid.
-
-Métodos:	
-
-	-point_to_point_ITM
-        -point_to_point
-
-Clase: **los**<br>
-Line Of Sight. No es un modelo como tal. Son una serie de funciones que calculan la existencia de obstáculos en el trayecto y determina que puntos distantes de la antena transmisora están en visión direct, libre de obstáculos(LINE-OF-SIGHT).
-
+Clase: **image_ctx**<br>
 Atributos:<br>
+
+	- width,
+	- height, 
+	- model, 
+	- format, 
+	- initialized, 
+	- *canvas,
+	- *next_pixel, 
+	- *extension, 
+	- *dt <br>
+	
+	-image_ctx_t
+	*pimage_ctx_t
+Los atributos de esta clase son usados por las clases *global-image.hh, image_dispatch_table, image_dispache_table_t*.
+
+Clase: **global-image**<br>
 Métodos:<br>
 
-	- PlotLOSPath
-	- PlotPropPath
-	- PlotLOSMap
-	- PlotPropagation
-	- PlotPath
+	image_set_format(int format)
 
-Clase: **pel**<br>
-Complejidad: FACIL
+Cambia el formato por defecto de la imagen
 
-Atributos:
+	int image_init(image_ctx_t \*ctx, const size_t width, const size_t height, const int model, const int format)
 
-	- f Freq
-	- TxH Height Tx
-	- RxH Height Rx
+Inicializa la imagen con una serie de atributos(Debe llamarse primero antes de escribir cualquier dato).<br>
 
-Métodos:
+	 image_add_pixel, image_set_pixel, image_get_pixel, image_write, image_free
 
-	- PlaneEarthLoss(float d, float TxH, float RxH);
+Leen y escriben en un fichero. Estas funciones simplemente envuelven los métodos definidos en **image_dispache_table_t**
 
-Clase: **soil**<br>
-Complejidad: FACIL
+Estos métodos vienen algo explicados en *image.cc*
 
-Atributos:
+Manejo de la salida de la imagen. Permite mejores formatos de salida. Se define esta clase para instanciar y manipular la interfaz ya comentada *image_dispache_table*.
 
-	- f Freq
-	- d Propagation ratio
-	- t: Terrain permittivity: 1 - 15 (Bad to Good)
+Clase: **\<INTERFAZ\>image_dispatch_table**<br>
+Métodos:<br>
 
-Métodos:
+	- init(image_ctx_t*), 
+	- add_pixel(image_ctx_t*,const uint8_t,const uint8_t,const uint8_t,const uint8_t)
+	- set_pixel(image_ctx_t*,const size_t,const size_t,const uint8_t,const uint8_t,const uint8_t,const uint8_t)
+	- get_pixel(image_ctx_t*,const size_t,const size_t,const uint8_t*,const uint8_t*,const uint8_t*,const uint8_t*)
+	- write(image_ctx_t*,FILE*)
+	- free(image_ctx_t*)
+	
+Estas funciones envuelven los métodos de las clase global-image.hh y image_ctx. Estos métodos no están definidos.
 
-	- Eouble SoilPathLoss(float f, float d, float t);
-
-Clase: **sui**<br>
-Complejidad: MEDIA
-
-Atributos:
-
-	- f Freq
-	- TxH Height Tx
-	- RxH Height Rx
-	- d: Propagation ratio
-	- mode (Urbano, Suburbano, rural)<br>
-
-Métodos:
-
-	- SUIpathLoss(double f, double TxH, double RxH, double d, int mode);
+Las anteriores clases realizan la construcción de la imagen bitmap, su formato RGB, resolución, y la guardan en el fichero de salida.
