@@ -1,26 +1,39 @@
 #include <stdlib.h>
 #include <string.h>
 #include "models/fspl.hh"
-#include "common.h"
+#include "models/hata.hh"
 #include <iostream>
 /*
-* Free Space Path Loss model
 * Frequency: Any MHz
 * Distance: Any km
-* 𝑃𝐿𝑑𝑏=32.44+20log𝑑+20log⁡(𝑓)
 */
 
 int main(int argc, char *argv[]){
 
     double lat_tx = 55.895436, lon_tx = -3.257968, Ploss = 0.0; //tx site
-    double lat_rx = 55.896890, lon_rx = -3.262426; // rx site
-    float f = 5000, d = 10, erp = 20;
-    std::string model = "fspl";
+    double lat_rx = 55.828814, lon_rx = -3.332724; // rx site
+    float f = 5000, d = 10, erp = 20, h_B = 100, h_M = 2;
+    std::string model = "";
+    int num_model = 0, mode = 1;
 
-    Ploss = FSPLpathLoss(f, d);
+    std::cout << "1. fspl" << "\n";
+    std::cout << "2. Hata" << "\n";
+    std::cout << "Choose propagation model(1,2): ";
+    
+    std::cin >> num_model;
 
-    std::cout << "fspl pathloss are: " << Ploss << "\n";
-
+    if(num_model == 1){
+        Ploss = FSPLpathLoss(f, d);
+    }
+    else if(num_model == 2){
+        Ploss = HATApathLoss(f, h_B, h_M, d, mode);
+    }
+    else{
+        std::cout << "Wrong number input" << "\n";
+        return 0;
+    }
+    std::cout << "Pathloss are: " << Ploss << "\n";
+    
     return 0;
 }
 
