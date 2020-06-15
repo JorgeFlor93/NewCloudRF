@@ -9,7 +9,8 @@ Las especificaciones y los test que incorporan la aplicación ss definen las sig
 	-lon Tx Longitude decimal degrees -180/+180
 	-rla  Rx Latitude for PPA (decimal degrees) -70/+70
 	-rlo  Rx Longitude for PPA (decimal degrees)
-	-txh Tx Height (above ground) Meters
+	-Txh Tx Height (above ground) Meters
+	-Rxh Rx Height (above ground) Meters
 	
 > ALGORITHM
 
