@@ -1,7 +1,9 @@
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "models/fspl.hh"
 #include "models/hata.hh"
+#include "Prop-tools/prop-tools.hh"
 #include <iostream>
 /*
 * Frequency: Any MHz
@@ -12,27 +14,45 @@ int main(int argc, char *argv[]){
 
     double lat_tx = 55.895436, lon_tx = -3.257968, Ploss = 0.0; //tx site
     double lat_rx = 55.828814, lon_rx = -3.332724; // rx site
-    float f = 5000, d = 10, erp = 20, h_B = 100, h_M = 2;
-    std::string model = "";
+    float f = 5000, d, h_B = 100, h_M = 2;
     int num_model = 0, mode = 1;
+    //struct site tx;
+    struct site rx;
+    struct site arr_tx[3]; //Vector de antenas
+
+    //Array  de Tx
+    arr_tx[0].lat = 55.895436, arr_tx[0].lon = -3.257968;
+    arr_tx[1].lat = 55.881092, arr_tx[1].lon = -3.288290;
+    arr_tx[2].lat = 55.876001, arr_tx[2].lon = -3.226494;
 
     std::cout << "1. fspl" << "\n";
     std::cout << "2. Hata" << "\n";
     std::cout << "Choose propagation model(1,2): ";
-    
     std::cin >> num_model;
 
-    if(num_model == 1){
-        Ploss = FSPLpathLoss(f, d);
+    /*Distance tx-rx
+    tx.lat = lat_tx;
+    tx.lon = lon_tx;
+    rx.lat = lat_rx;
+    rx.lon = lon_rx;
+    d = Distance(tx, rx);
+    */
+
+    for(int i = 0; i < 3; i++){
+        d = Distance(arr_tx[i], rx);
+        if(num_model == 1){
+            Ploss = FSPLpathLoss(f, d);
+        }
+        else if(num_model == 2){
+            Ploss = HATApathLoss(f, h_B, h_M, d, mode);
+        }
+        else{
+            std::cout << "Wrong number input" << "\n";
+            return 0;
+        }
+        std::cout << "Distance (km): " << d << "\n";
+        std::cout << "Pathloss are: " << Ploss << "\n";
     }
-    else if(num_model == 2){
-        Ploss = HATApathLoss(f, h_B, h_M, d, mode);
-    }
-    else{
-        std::cout << "Wrong number input" << "\n";
-        return 0;
-    }
-    std::cout << "Pathloss are: " << Ploss << "\n";
     
     return 0;
 }
