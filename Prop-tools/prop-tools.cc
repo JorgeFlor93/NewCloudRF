@@ -2,8 +2,8 @@
 
 double Distance(struct site site1, struct site site2)
 {
-	/* This function returns the great circle distance
-	   in miles between any two site locations. */
+	// This function returns the great circle distance
+	//   in miles between any two site locations. 
 
 	double lat1, lon1, lat2, lon2, distance;
 
