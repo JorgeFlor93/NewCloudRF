@@ -29,7 +29,7 @@ Carga valores de la variable struct region de common.h.
 Carga colores por defecto.
 	
 	- int LoadTopoData(int max_lon, int min_lon, int max_lat, int min_lat)
-Esta función carga los archivos SDF necesarios para cubrir los límites de la región especificada. Almacena la info en un extern char string\[] declarado en common.h
+Esta función carga los archivos SDF necesarios para cubrir los límites de la región especificada. Invoca a LoadSDF() de outputs.hh. Devuelve un entero control de error
 
 	- int LoadUDT(char \*filename)
 User-Define Terrain, carga un fichero de DEM especificado por el usuario. errno si error.
