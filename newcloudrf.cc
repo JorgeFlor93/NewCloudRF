@@ -24,10 +24,6 @@ int main(int argc, char *argv[]){
     double wide_area = 0.0, height_area = 0.0;
     int error_if_1 = 0;
 
-     /* SDF atributtes */ 
-    int debug = 0, result, nortRxHin, west_min, west_max, z = 0; int nortRxHax, min_lat = 0, min_lon = 0, max_lat = 0, max_lon = 0, rxlat = 0, rxlon = 0, txlat = 0, txlon = 0;
-    double tx_range = 0.0; double rx_range = 0.0; double deg_range = 0.0; double max_range = 1.0; double deg_limit = 0.0; double deg_range_lon = 0.0; double altitudeLR = 0.0; double altitude = 0.0;
-    unsigned char area_mode = 0; unsigned char topomap = 0; unsigned char max_txsites = 30; unsigned char txsites = 0; unsigned char LRmap = 1;
     
     std::vector<std::string> type;
 
