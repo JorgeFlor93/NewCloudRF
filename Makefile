@@ -3,8 +3,8 @@ CF=-Wall -g
 MODEL=models/
 TOOLS=Prop-tools/
 
-main: newcloudrf.cc ${MODEL}fspl.o ${MODEL}hata.o inputs.o main.o common.h
-	${CC} ${CF} newcloudrf.cc ${MODEL}fspl.o ${MODEL}hata.o inputs.o main.o -o main
+main: newcloudrf.cc ${MODEL}fspl.o ${MODEL}hata.o inputs.o main.o distance.o common.h 
+	${CC} ${CF} newcloudrf.cc ${MODEL}fspl.o ${MODEL}hata.o inputs.o distance.o main.o -o main
 
 fspl.o: ${MODEL}fspl.cc ${MODEL}fspl.hh
 	${CC} ${CF} -c ${MODEL}fspl.cc -o ${MODEL}fspl.o
@@ -17,6 +17,9 @@ main.o: main.cc main.hh
 
 inputs.o: inputs.cc inputs.hh 
 	${CC} ${CF} -c inputs.cc -o inputs.o
+
+distance.o: distance.cc distance.hh
+	${CC} ${CF} -c distance.cc -o distance.o
 
 clean:
 	rm -f main ${MODEL}*.o ${TOOLS}*.o *.o
