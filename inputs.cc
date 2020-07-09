@@ -8,6 +8,7 @@
 #include "common.h"
 #include "main.hh"
 #include "tiles.hh"
+#include "inputs.hh"
 
 int loadClutter(char *filename, double radius, struct site tx)
 {
@@ -487,43 +488,44 @@ int LoadSDF_SDF(char *name)
 
 	sdf_file[x] = 0;
 
+	
+	std::cout << sdf_file << std::endl;
 	/* Parse filename for minimum latitude and longitude values */
-
 	if( sscanf(sdf_file, "%d:%d:%d:%d", &minlat, &maxlat, &minlon, &maxlon) != 4 )
 		return -EINVAL;
-
+	// std::cout << dem[indx].min_north << ", " << dem[indx].min_west << ", " << dem[indx].max_north << dem[indx].max_west << std::endl;
+	//std::cout << "x " << minlat << ", x + 1 " << maxlat << ", ymin " << minlon << ", ymax " << maxlon << std::endl;
 	sdf_file[x] = '.';
 	sdf_file[x + 1] = 's';
 	sdf_file[x + 2] = 'd';
 	sdf_file[x + 3] = 'f';
 	sdf_file[x + 4] = 0;
-
+	// std::cout << "found: " <<  sdf_file[x + 4] << std::endl;
+	
 	/* Is it already in memory? */
-
+	
 	for (indx = 0, found = 0; indx < MAXPAGES && found == 0; indx++) {
-		if (minlat == dem[indx].min_north
-		    && minlon == dem[indx].min_west
-		    && maxlat == dem[indx].max_north
-		    && maxlon == dem[indx].max_west)
+		if (minlat == dem[indx].min_north && minlon == dem[indx].min_west && maxlat == dem[indx].max_north && maxlon == dem[indx].max_west)
 			found = 1;
 	}
-
+	
 	/* Is room available to load it? */
-
+	
 	if (found == 0) {
 		for (indx = 0, free_page = 0; indx < MAXPAGES && free_page == 0;
 		     indx++)
 			if (dem[indx].max_north == -90)
 				free_page = 1;
 	}
+	
 
 	indx--;
-
+	
 	if (free_page && found == 0 && indx >= 0 && indx < MAXPAGES) {
 		/* Search for SDF file in current working directory first */
 
 		strncpy(path_plus_name, sdf_file, sizeof(path_plus_name)-1);
-
+		std::cout << path_plus_name << std::endl;
 		if( (fd = fopen(path_plus_name, "rb")) == NULL ){
 			/* Next, try loading SDF file from path specified
 			   in $HOME/.ss_path file or by -d argument */
@@ -657,7 +659,6 @@ int LoadSDF_SDF(char *name)
 					min_west = dem[indx].min_west;
 			}
 		}
-
 		return 1;
 	}
 
@@ -1629,11 +1630,16 @@ int LoadTopoData(int max_lon, int min_lon, int max_lat, int min_lat)
 	int success;
 
 	width = ReduceAngle(max_lon - min_lon);
-
 	if ((max_lon - min_lon) <= 180.0) {
 		for (y = 0; y <= width; y++)
 			for (x = min_lat; x <= max_lat; x++) {
 				ymin = (int)(min_lon + (double)y);
+
+				if(ymin < 0){
+					ymin *= -1;
+					ymax = ymin;
+					ymin = ymax - 1; 
+				}
 
 				while (ymin < 0)
 					ymin += 360;
@@ -1649,7 +1655,6 @@ int LoadTopoData(int max_lon, int min_lon, int max_lat, int min_lat)
 				while (ymax >= 360)
 					ymax -= 360;
 
-
 					if (ippd == 3600)
 						snprintf(string, 19,
 							 "%d:%d:%d:%d-hd", x,
@@ -1658,6 +1663,8 @@ int LoadTopoData(int max_lon, int min_lon, int max_lat, int min_lat)
 						snprintf(string, 16,
 							 "%d:%d:%d:%d", x,
 							 x + 1, ymin, ymax);
+
+				std::cout << "string: " << string << std::endl;
 				if( (success = LoadSDF(string)) < 0 ){
 					return -success;
 				}

@@ -28,6 +28,8 @@ double ElevationAngle2(struct site source, struct site destination, double er);
 double ReadBearing(char *input);
 void ObstructionAnalysis(struct site xmtr, struct site rcvr, double f, FILE *outfile);
 
+void getMain();
+
 #define DEG2RAD	1.74532925199e-02
 /*
 struct site {

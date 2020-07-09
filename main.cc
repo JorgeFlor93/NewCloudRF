@@ -293,6 +293,7 @@ double GetElevation(struct site location)
 	double elevation;
 
 	for (indx = 0, found = 0; indx < MAXPAGES && found == 0;) {
+		// std::cout << "loc_lat" << location.lat << std::endl;
 		x = (int)rint(ppd * (location.lat - dem[indx].min_north));
 		y = mpi -
 		    (int)rint(yppd *
@@ -492,6 +493,7 @@ void ReadPath(struct site source, struct site destination)
 	total_distance = Distance(source, destination);
 
 	if (total_distance > (30.0 / ppd)) {
+		std::cout << "0" << std::endl;
 		dx = samples_per_radian * acos(cos(lon1 - lon2));
 		dy = samples_per_radian * acos(cos(lat1 - lat2));
 		path_length = sqrt((dx * dx) + (dy * dy));
@@ -499,6 +501,7 @@ void ReadPath(struct site source, struct site destination)
 	}
 
 	else {
+		std::cout << "1" << std::endl;
 		c = 0;
 		dx = 0.0;
 		dy = 0.0;
@@ -512,6 +515,7 @@ void ReadPath(struct site source, struct site destination)
 		path.lat[c] = lat1;
 		path.lon[c] = lon1;
 		path.elevation[c] = GetElevation(source);
+		//std::cout << "path lat, lon, elevation: " << path.lat[c] << " - " << path.lon[c] << " - "<< path.elevation[c] << std::endl;
 		path.distance[c] = 0.0;
 	}
 
@@ -555,6 +559,7 @@ void ReadPath(struct site source, struct site destination)
 		tempsite.lat = lat2;
 		tempsite.lon = lon2;
 		path.elevation[c] = GetElevation(tempsite);
+		//std::cout << "path lat, lon, elevation: " << path.lat[c] << " - " << path.lon[c] << " - "<< path.elevation[c] << std::endl;
 		// fix for tile gaps in multi-tile LIDAR plots
 		if(path.elevation[c]==0 && path.elevation[c-1] > 10)
 			path.elevation[c]=path.elevation[c-1];
@@ -566,7 +571,7 @@ void ReadPath(struct site source, struct site destination)
 	if (c < ARRAYSIZE) {
 		path.lat[c] = destination.lat;
 		path.lon[c] = destination.lon;
-		path.elevation[c] = GetElevation(destination);
+		path.elevation[c] = GetElevation(destination); 
 		path.distance[c] = total_distance;
 		c++;
 	}
@@ -1039,3 +1044,932 @@ void do_allocs(void)
 		dem[i].max_west = -1;
 	}
 }
+
+void getMain(){
+
+	int x, y, z = 0, min_lat, min_lon, max_lat, max_lon,
+	    rxlat, rxlon, txlat, txlon, west_min, west_max,
+	    nortRxHin, nortRxHax, propmodel, knifeedge = 0, ppa =
+	    0, normalise = 0, haf = 0, pmenv = 1, lidar=0, cropped, result;
+
+	bool use_threads = true;
+
+	unsigned char LRmap = 0, txsites = 0, topomap = 0, geo = 0, kml =
+	    0, area_mode = 0, max_txsites, ngs = 0;
+
+	char mapfile[255], ano_filename[255], lidar_tiles[27000], clutter_file[255];
+	char *az_filename, *el_filename, *udt_file = NULL;
+
+	double altitude = 0.0, altitudeLR = 0.0, tx_range = 0.0,
+	    rx_range = 0.0, deg_range = 0.0, deg_limit = 0.0, deg_range_lon;
+
+// 	if (strstr(argv[0], "signalserverHD")) {
+// 		MAXPAGES = 9;
+// 		ARRAYSIZE = 32410;
+// 		IPPD = 3600;
+// 	}
+
+// 	if (strstr(argv[0], "signalserverLIDAR")) {
+// 		MAXPAGES = 100; // 10x10
+// 		lidar = 1;
+// 		IPPD = 6000; // will be overridden based upon file header...
+// 	}
+
+// 	strncpy(ss_name, "Signal Server\0", 14);
+
+// 	if (argc == 1) {
+
+// 		fprintf(stdout, "Version: %s %.2f (Built for %d DEM tiles at %d pixels)\n", ss_name, version,MAXPAGES, IPPD);
+// 		fprintf(stdout, "License: GNU General Public License (GPL) version 2\n\n");
+// 		fprintf(stdout, "Radio propagation simulator by Alex Farrant QCVS, 2E0TDW\n");
+// 		fprintf(stdout, "Based upon SPLAT! by John Magliacane, KD2BD\n\n");
+// 		fprintf(stdout, "Usage: signalserver [data options] [input options] [output options] -o outputfile\n\n");
+// 		fprintf(stdout, "Data:\n");
+// 		fprintf(stdout, "     -sdf Directory containing SRTM derived .sdf DEM tiles\n");
+// 		fprintf(stdout, "     -lid ASCII grid tile (LIDAR) with dimensions and resolution defined in header\n");
+// 		fprintf(stdout, "     -udt User defined point clutter as decimal co-ordinates: 'latitude,longitude,height'\n");
+// 		fprintf(stdout, "     -clt MODIS 17-class wide area clutter in ASCII grid format\n");
+// 		fprintf(stdout, "Input:\n");
+// 		fprintf(stdout,	"     -lat Tx Latitude (decimal degrees) -70/+70\n");
+// 		fprintf(stdout,	"     -lon Tx Longitude (decimal degrees) -180/+180\n");
+// 		fprintf(stdout, "     -txh Tx Height (above ground)\n");
+// 		fprintf(stdout,	"     -rla (Optional) Rx Latitude for PPA (decimal degrees) -70/+70\n");
+// 		fprintf(stdout, "     -rlo (Optional) Rx Longitude for PPA (decimal degrees) -180/+180\n");
+// 		fprintf(stdout,	"     -f Tx Frequency (MHz) 20MHz to 100GHz (LOS after 20GHz)\n");
+// 		fprintf(stdout,	"     -erp Tx Total Effective Radiated Power in Watts (dBd) inc Tx+Rx gain. 2.14dBi = 0dBd\n");
+// 		fprintf(stdout,	"     -rxh Rx Height(s) (optional. Default=0.1)\n");
+// 		fprintf(stdout,	"     -rxg Rx gain dBd (optional for PPA text report)\n");
+// 		fprintf(stdout,	"     -hp Horizontal Polarisation (default=vertical)\n");
+// 		fprintf(stdout, "     -gc Random ground clutter (feet/meters)\n");
+// 		fprintf(stdout, "     -m Metric units of measurement\n");
+// 		fprintf(stdout, "     -te Terrain code 1-6 (optional)\n");
+// 		fprintf(stdout,	"     -terdic Terrain dielectric value 2-80 (optional)\n");
+// 		fprintf(stdout,	"     -tercon Terrain conductivity 0.01-0.0001 (optional)\n");
+// 		fprintf(stdout, "     -cl Climate code 1-6 (optional)\n");
+// 		fprintf(stdout, "     -rel Reliability for ITM model 50 to 99 (optional)\n");
+// 		fprintf(stdout, "     -resample Reduce Lidar resolution by specified factor (2 = 50%)\n");
+// 		fprintf(stdout, "Output:\n");
+// 		fprintf(stdout,	"     -dbm Plot Rxd signal power instead of field strength\n");
+// 		fprintf(stdout, "     -rt Rx Threshold (dB / dBm / dBuV/m)\n");
+// 		fprintf(stdout, "     -o Filename. Required. \n");
+// 		fprintf(stdout, "     -R Radius (miles/kilometers)\n");
+// 		fprintf(stdout,	"     -res Pixels per tile. 300/600/1200/3600 (Optional. LIDAR res is within the tile)\n");
+// 		fprintf(stdout,	"     -pm Propagation model. 1: ITM, 2: LOS, 3: Hata, 4: ECC33,\n");
+// 		fprintf(stdout,	"     	  5: SUI, 6: COST-Hata, 7: FSPL, 8: ITWOM, 9: Ericsson,\n");
+// 		fprintf(stdout, "	  10: Plane earth, 11: Egli VHF/UHF, 12: Soil\n");
+// 		fprintf(stdout,	"     -pe Propagation model mode: 1=Urban,2=Suburban,3=Rural\n");
+// 		fprintf(stdout,	"     -ked Knife edge diffraction (Already on for ITM)\n");
+// 		fprintf(stdout, "Debugging:\n");
+// 		fprintf(stdout, "     -t Terrain greyscale background\n");
+// 		fprintf(stdout, "     -dbg Verbose debug messages\n");
+// 		fprintf(stdout, "     -ng Normalise Path Profile graph\n");
+// 		fprintf(stdout, "     -haf Halve 1 or 2 (optional)\n");
+// 		fprintf(stdout, "     -nothreads Turn off threaded processing\n");
+
+// 		fflush(stdout);
+
+// 		return 1;
+// 	}
+
+// 	/*
+// 	 * If we're not called as signalserverLIDAR we can allocate various
+// 	 * memory now. For LIDAR we need to wait until we've parsed
+// 	 * the headers in the .asc file to know how much memory to allocate...
+// 	 */
+// 	if (!lidar)
+// 		do_allocs();
+
+	kml = 0;
+	geo = 0;
+	dbm = 0;
+	gpsav = 0;
+	metric = 0;
+	string[0] = 0;
+	mapfile[0] = 0;
+	clutter_file[0] = 0;
+	clutter = 0.0;
+	forced_erp = -1.0;
+	forced_freq = 0.0;
+	sdf_path[0] = 0;
+	udt_file = NULL;
+	path.length = 0;
+	max_txsites = 30;
+	fzone_clearance = 0.6;
+	contour_threshold = 0;
+	resample = 0;
+
+	ano_filename[0] = 0;
+	earthradius = EARTHRADIUS;
+	max_range = 1.0;
+	propmodel = 1;		//ITM
+	lat = 0;
+	lon = 0;
+	txh = 0;
+	ngs = 1;		// no terrain background
+	kml = 1;
+	LRmap = 1;
+	area_mode = 1;
+	ippd = IPPD;		// default resolution
+
+	sscanf("0.1", "%lf", &altitudeLR);
+
+	// Defaults
+	LR.eps_dielect = 15.0;	// Farmland
+	LR.sgm_conductivity = 0.005;	// Farmland
+	LR.eno_ns_surfref = 301.0;
+	LR.frq_mhz = 19.0;	// Deliberately too low
+	LR.radio_climate = 5;	// continental
+	LR.pol = 1;		// vert
+	LR.conf = 0.50;
+	LR.rel = 0.50;
+	LR.erp = 0.0;		// will default to Path Loss
+
+	tx_site[0].lat = 91.0;
+	tx_site[0].lon = 361.0;
+	tx_site[1].lat = 91.0;
+	tx_site[1].lon = 361.0;
+
+// 	/* Scan for command line arguments */
+
+// 	for (x = 1; x <= y; x++) {
+
+
+// 		if (strcmp(argv[x], "-R") == 0) {
+// 			z = x + 1;
+
+// 			if (z <= y && argv[z][0] && argv[z][0] != '-') {
+// 				sscanf(argv[z], "%lf", &max_range);
+
+// 			}
+// 		}
+
+// 		if (strcmp(argv[x], "-gc") == 0) {
+// 			z = x + 1;
+
+// 			if (z <= y && argv[z][0] && argv[z][0] != '-') {
+// 				sscanf(argv[z], "%lf", &clutter);
+
+// 				if (clutter < 0.0)
+// 					clutter = 0.0;
+// 			}
+// 		}
+
+// 		if (strcmp(argv[x], "-clt") == 0) {
+// 			z = x + 1;
+
+// 			if (z <= y && argv[z][0] && argv[z][0] != '-') {
+// 				strncpy(clutter_file, argv[z], 253);
+// 			}
+// 		}
+
+// 		if (strcmp(argv[x], "-o") == 0) {
+// 			z = x + 1;
+
+// 			if (z <= y && argv[z][0] && argv[z][0] != '-') {
+// 				strncpy(mapfile, argv[z], 253);
+// 				strncpy(tx_site[0].name, "Tx", 2);
+// 				strncpy(tx_site[0].filename, argv[z], 253);
+// 				/* Antenna pattern files have the same basic name as the output file
+// 				 * but with a different extension. If they exist, load them now */
+// 				if( (az_filename = (char*) calloc(strlen(argv[z]) + strlen(AZ_FILE_SUFFIX) + 1, sizeof(char))) == NULL )
+// 					return ENOMEM;
+// 				strcpy(az_filename, argv[z]);
+// 				strcat(az_filename, AZ_FILE_SUFFIX);
+// 				if( (el_filename = (char*) calloc(strlen(argv[z]) + strlen(EL_FILE_SUFFIX) + 1, sizeof(char))) == NULL ){
+// 					free(az_filename);
+// 					return ENOMEM;
+// 				}
+// 				strcpy(el_filename, argv[z]);
+// 				strcat(el_filename, EL_FILE_SUFFIX);
+// 				if( (result = LoadPAT(az_filename,el_filename)) != 0 ){
+// 					fprintf(stderr,"Permissions error reading antenna pattern file\n");
+// 					free(az_filename);
+// 					free(el_filename);
+// 					exit(result);
+// 				}
+// 				free(az_filename);
+// 				free(el_filename);
+// 			} else if (z <= y && argv[z][0] && argv[z][0] == '-' && argv[z][1] == '\0' ) {
+// 				/* Handle writing image data to stdout */
+// 				to_stdout = true;
+// 				mapfile[0] = '\0';
+// 				strncpy(tx_site[0].name, "Tx", 2);
+// 				tx_site[0].filename[0] = '\0';
+// 				fprintf(stderr,"Writing to stdout\n");
+// 			}
+// 		}
+
+// 		if (strcmp(argv[x], "-so") == 0) {
+// 			z = x + 1;
+// 			if(image_set_library(argv[z]) != 0){
+// 				fprintf(stderr,"Error configuring image processor\n");
+// 				exit(EINVAL);
+// 			}
+// 		}
+
+// 		if (strcmp(argv[x], "-rt") == 0) {
+// 			z = x + 1;
+
+// 			if (z <= y && argv[z][0])	/* A minus argument is legal here */
+// 				sscanf(argv[z], "%d", &contour_threshold);
+// 		}
+
+// 		if (strcmp(argv[x], "-m") == 0) {
+// 			metric = 1;
+
+// 		}
+
+// 		if (strcmp(argv[x], "-t") == 0) {
+// 			ngs = 0;	// greyscale background
+// 		}
+
+// 		if (strcmp(argv[x], "-dbm") == 0)
+// 			dbm = 1;
+
+// 		if (strcmp(argv[x], "-sdf") == 0) {
+// 			z = x + 1;
+
+// 			if (z <= y && argv[z][0] && argv[z][0] != '-')
+// 				strncpy(sdf_path, argv[z], 253);
+// 		}
+		
+// 		if (strcmp(argv[x], "-lid") == 0) {
+// 			z = x + 1;
+// 			lidar=1;
+// 			if (z <= y && argv[z][0] && argv[z][0] != '-')
+// 				strncpy(lidar_tiles, argv[z], 27000); // 900 tiles!
+// 		}
+
+// 		if (strcmp(argv[x], "-res") == 0) {
+// 			z = x + 1;
+
+// 			if (!lidar &&
+// 			    z <= y &&
+// 			    argv[z][0] &&
+// 			    argv[z][0] != '-') {
+// 				sscanf(argv[z], "%d", &ippd);
+
+// 				switch (ippd) {
+// 				case 300:
+// 					MAXRAD = 500;
+// 					jgets = 3; // 3 dummy reads
+// 					break;
+// 				case 600:
+// 					MAXRAD = 500;
+// 					jgets = 1;
+// 					break;
+// 				case 1200:
+// 					MAXRAD = 200;
+// 					ippd = 1200;
+// 					break;
+// 				case 3600:
+// 					MAXRAD = 100;
+// 					ippd = 3600;
+// 					break;
+// 				default:
+// 					MAXRAD = 200;
+// 					ippd = 1200;
+// 					break;
+// 				}
+// 			}
+// 		}
+
+// 		if (strcmp(argv[x], "-resample") == 0) {
+// 			z = x + 1;
+
+// 			if(!lidar){
+// 				fprintf(stderr, "Error, this should only be used with LIDAR tiles.\n");
+// 				return -1;
+// 			}
+
+// 			sscanf(argv[z], "%d", &resample);
+// 		}
+
+// 		if (strcmp(argv[x], "-lat") == 0) {
+// 			z = x + 1;
+
+// 			if (z <= y && argv[z][0]) {
+// 				tx_site[0].lat = ReadBearing(argv[z]);
+// 			}
+// 		}
+// 		if (strcmp(argv[x], "-lon") == 0) {
+// 			z = x + 1;
+// 			if (z <= y && argv[z][0]) {
+// 				tx_site[0].lon = ReadBearing(argv[z]);
+// 				tx_site[0].lon *= -1;
+// 				if (tx_site[0].lon < 0.0)
+// 					tx_site[0].lon += 360.0;
+// 			}
+// 		}
+// 		//Switch to Path Profile Mode if Rx co-ords specified
+// 		if (strcmp(argv[x], "-rla") == 0) {
+// 			z = x + 1;
+
+// 			if (z <= y && argv[z][0]) {
+// 				ppa = 1;
+// 				tx_site[1].lat = ReadBearing(argv[z]);
+
+// 			}
+// 		}
+// 		if (strcmp(argv[x], "-rlo") == 0) {
+// 			z = x + 1;
+// 			if (z <= y && argv[z][0]) {
+// 				tx_site[1].lon = ReadBearing(argv[z]);
+// 				tx_site[1].lon *= -1;
+// 				if (tx_site[1].lon < 0.0)
+// 					tx_site[1].lon += 360.0;
+// 			}
+// 		}
+
+// 		if (strcmp(argv[x], "-txh") == 0) {
+// 			z = x + 1;
+
+// 			if (z <= y && argv[z][0] && argv[z][0] != '-') {
+// 				sscanf(argv[z], "%f", &tx_site[0].alt);
+
+// 			}
+// 			txsites = 1;
+// 		}
+
+// 		if (strcmp(argv[x], "-rxh") == 0) {
+// 			z = x + 1;
+
+// 			if (z <= y && argv[z][0] && argv[z][0] != '-') {
+// 				sscanf(argv[z], "%lf", &altitudeLR);
+// 				sscanf(argv[z], "%f", &tx_site[1].alt);
+// 			}
+// 		}
+
+// 		if (strcmp(argv[x], "-rxg") == 0) {
+// 			z = x + 1;
+
+// 			if (z <= y && argv[z][0] && argv[z][0] != '-') {
+// 				sscanf(argv[z], "%lf", &rxGain);
+// 			}
+// 		}
+
+// 		if (strcmp(argv[x], "-f") == 0) {
+// 			z = x + 1;
+
+// 			if (z <= y && argv[z][0] && argv[z][0] != '-') {
+// 				sscanf(argv[z], "%lf", &LR.frq_mhz);
+// 			}
+// 		}
+
+// 		if (strcmp(argv[x], "-erp") == 0) {
+// 			z = x + 1;
+
+// 			if (z <= y && argv[z][0] && argv[z][0] != '-') {
+// 				sscanf(argv[z], "%lf", &LR.erp);
+// 			}
+// 		}
+
+// 		if (strcmp(argv[x], "-cl") == 0) {
+// 			z = x + 1;
+
+// 			if (z <= y && argv[z][0] && argv[z][0] != '-') {
+
+// 				sscanf(argv[z], "%d", &LR.radio_climate);
+
+// 			}
+// 		}
+// 		if (strcmp(argv[x], "-te") == 0) {
+// 			z = x + 1;
+
+// 			if (z <= y && argv[z][0] && argv[z][0] != '-') {
+
+// 				sscanf(argv[z], "%d", &ter);
+
+// 				switch (ter) {
+// 				case 1:	// Water
+// 					terdic = 80;
+// 					tercon = 0.010;
+// 					break;
+
+// 				case 2:	// Marsh
+// 					terdic = 12;
+// 					tercon = 0.007;
+// 					break;
+
+// 				case 3:	// Farmland
+// 					terdic = 15;
+// 					tercon = 0.005;
+// 					break;
+
+// 				case 4:	//Mountain
+// 					terdic = 13;
+// 					tercon = 0.002;
+// 					break;
+// 				case 5:	//Desert
+// 					terdic = 13;
+// 					tercon = 0.002;
+// 					break;
+// 				case 6:	//Urban
+// 					terdic = 5;
+// 					tercon = 0.001;
+// 					break;
+// 				}
+// 				LR.eps_dielect = terdic;
+// 				LR.sgm_conductivity = tercon;
+
+// 			}
+// 		}
+
+// 		if (strcmp(argv[x], "-terdic") == 0) {
+// 			z = x + 1;
+
+// 			if (z <= y && argv[z][0] && argv[z][0] != '-') {
+
+// 				sscanf(argv[z], "%lf", &terdic);
+
+// 				LR.eps_dielect = terdic;
+
+// 			}
+// 		}
+
+// 		if (strcmp(argv[x], "-tercon") == 0) {
+// 			z = x + 1;
+
+// 			if (z <= y && argv[z][0] && argv[z][0] != '-') {
+
+// 				sscanf(argv[z], "%lf", &tercon);
+
+// 				LR.sgm_conductivity = tercon;
+
+// 			}
+// 		}
+
+// 		if (strcmp(argv[x], "-hp") == 0) {
+// 			// Horizontal polarisation (0)
+// 			LR.pol = 0;
+// 		}
+
+// 		if (strcmp(argv[x], "-dbg") == 0) {
+// 			debug = 1;
+// 		}
+
+	
+// 		 /*UDT*/
+// 		if (strcmp(argv[x], "-udt") == 0) {
+// 			z = x + 1;
+
+// 			if (z <= y && argv[z][0]) {
+// 				udt_file = (char*) calloc(PATH_MAX+1, sizeof(char));
+// 				if( udt_file == NULL )
+// 					return ENOMEM;
+// 				strncpy(udt_file, argv[z], 253);
+// 			}
+// 		}
+
+// 		/*Prop model */
+
+// 		if (strcmp(argv[x], "-pm") == 0) {
+// 			z = x + 1;
+
+// 			if (z <= y && argv[z][0]) {
+// 				sscanf(argv[z], "%d", &propmodel);
+// 			}
+// 		}
+// 		// Prop model variant eg. urban/suburban
+// 		if (strcmp(argv[x], "-pe") == 0) {
+// 			z = x + 1;
+
+// 			if (z <= y && argv[z][0]) {
+// 				sscanf(argv[z], "%d", &pmenv);
+// 			}
+// 		}
+// 		//Knife edge diffraction
+// 		if (strcmp(argv[x], "-ked") == 0) {
+// 			z = x + 1;
+// 			knifeedge = 1;
+// 		}
+
+// 		//Normalise Path Profile chart
+// 		if (strcmp(argv[x], "-ng") == 0) {
+// 			z = x + 1;
+// 			normalise = 1;
+// 		}
+// 		//Halve the problem
+// 		if (strcmp(argv[x], "-haf") == 0) {
+// 			z = x + 1;
+// 			if (z <= y && argv[z][0]) {
+// 				sscanf(argv[z], "%d", &haf);
+// 			}
+// 		}
+
+// 		//Disable threads
+// 		if (strcmp(argv[x], "-nothreads") == 0) {
+// 			z = x + 1;
+// 			use_threads = false;
+// 		}
+
+// 		// Reliability % for ITM model
+// 		if (strcmp(argv[x], "-rel") == 0) {
+// 			z = x + 1;
+
+// 			if (z <= y && argv[z][0]) {
+// 				sscanf(argv[z], "%lf", &LR.rel);
+// 				sscanf(argv[z], "%lf", &LR.conf);
+// 				LR.rel=LR.rel/100;
+// 				LR.conf=LR.conf/100;
+// 			}
+// 		}
+// 	}
+
+// 	/* ERROR DETECTION */
+// 	if (tx_site[0].lat > 90 || tx_site[0].lat < -90) {
+// 		fprintf(stderr,
+// 			"ERROR: Either the lat was missing or out of range!");
+// 		exit(EINVAL);
+
+// 	}
+// 	if (tx_site[0].lon > 360 || tx_site[0].lon < 0) {
+// 		fprintf(stderr,
+// 			"ERROR: Either the lon was missing or out of range!");
+// 		exit(EINVAL);
+
+// 	}
+// 	if (LR.frq_mhz < 20 || LR.frq_mhz > 100000) {
+// 		fprintf(stderr,
+// 			"ERROR: Either the Frequency was missing or out of range!");
+// 		exit(EINVAL);
+// 	}
+// 	if (LR.erp > 500000000) {
+// 		fprintf(stderr, "ERROR: Power was out of range!");
+// 		exit(EINVAL);
+
+// 	}
+// 	if (LR.eps_dielect > 80 || LR.eps_dielect < 0.1) {
+// 		fprintf(stderr, "ERROR: Ground Dielectric value out of range!");
+// 		exit(EINVAL);
+
+// 	}
+// 	if (LR.sgm_conductivity > 0.01 || LR.sgm_conductivity < 0.000001) {
+// 		fprintf(stderr, "ERROR: Ground conductivity out of range!");
+// 		exit(EINVAL);
+
+// 	}
+
+// 	if (tx_site[0].alt < 0 || tx_site[0].alt > 60000) {
+// 		fprintf(stderr,
+// 			"ERROR: Tx altitude above ground was too high: %f",
+// 			tx_site[0].alt);
+// 		exit(EINVAL);
+// 	}
+// 	if (altitudeLR < 0 || altitudeLR > 60000) {
+// 		fprintf(stderr,
+// 			"ERROR: Rx altitude above ground was too high!");
+// 		exit(EINVAL);
+// 	}
+
+// 	if(!lidar){
+// 		if (ippd < 300 || ippd > 10000) {
+// 			fprintf(stderr, "ERROR: resolution out of range!");
+// 			exit(EINVAL);
+// 		}
+// 	}
+
+// 	if (contour_threshold < -200 || contour_threshold > 240) {
+// 		fprintf(stderr,
+// 			"ERROR: Receiver threshold out of range (-200 / +240)");
+// 		exit(EINVAL);
+// 	}
+// 	if (propmodel > 2 && propmodel < 7 && LR.frq_mhz < 150) {
+// 		fprintf(stderr,
+// 			"ERROR: Frequency too low for Propagation model");
+// 		exit(EINVAL);
+// 	}
+
+// 	if (to_stdout == true && ppa != 0) {
+// 		fprintf(stderr,
+// 			"ERROR: Cannot write to stdout in ppa mode");
+// 		exit(EINVAL);
+// 	}
+
+// 	if(resample > 10){
+// 		fprintf(stderr,
+// 			"ERROR: Cannot resample higher than a factor of 10");
+// 		exit(EINVAL);	
+// 	}
+// 	if (metric) {
+// 		altitudeLR /= METERS_PER_FOOT;	/* 10ft * 0.3 = 3.3m */
+// 		max_range /= KM_PER_MILE;	/* 10 / 1.6 = 7.5 */
+// 		altitude /= METERS_PER_FOOT;
+// 		tx_site[0].alt /= METERS_PER_FOOT;	/* Feet to metres */
+// 		tx_site[1].alt /= METERS_PER_FOOT;	/* Feet to metres */
+// 		clutter /= METERS_PER_FOOT;	/* Feet to metres */
+// 	}
+
+// 	/* Ensure a trailing '/' is present in sdf_path */
+
+// 	if (sdf_path[0]) {
+// 		x = strlen(sdf_path);
+
+// 		if (sdf_path[x - 1] != '/' && x != 0) {
+// 			sdf_path[x] = '/';
+// 			sdf_path[x + 1] = 0;
+// 		}
+// 	}
+
+// 	x = 0;
+// 	y = 0;
+
+// 	min_lat = 70;
+// 	max_lat = -70;
+
+
+// 	min_lon = (int)floor(tx_site[0].lon);
+// 	max_lon = (int)floor(tx_site[0].lon);
+
+// 	txlat = (int)floor(tx_site[0].lat);
+// 	txlon = (int)floor(tx_site[0].lon);
+
+// 	if (txlat < min_lat)
+// 		min_lat = txlat;
+
+// 	if (txlat > max_lat)
+// 		max_lat = txlat;
+
+// 	if (LonDiff(txlon, min_lon) < 0.0)
+// 		min_lon = txlon;
+
+// 	if (LonDiff(txlon, max_lon) >= 0.0)
+// 		max_lon = txlon;
+
+// 	if (ppa == 1) {
+// 		rxlat = (int)floor(tx_site[1].lat);
+// 		rxlon = (int)floor(tx_site[1].lon);
+
+// 		if (rxlat < min_lat)
+// 			min_lat = rxlat;
+
+// 		if (rxlat > max_lat)
+// 			max_lat = rxlat;
+
+// 		if (LonDiff(rxlon, min_lon) < 0.0)
+// 			min_lon = rxlon;
+
+// 		if (LonDiff(rxlon, max_lon) >= 0.0)
+// 			max_lon = rxlon;
+// 	}
+
+// 	/* Load the required tiles */
+// 	if(lidar){
+// 		if( (result = loadLIDAR(lidar_tiles, resample)) != 0 ){
+// 			fprintf(stderr, "Couldn't find one or more of the "
+// 				"lidar files. Please ensure their paths are "
+// 				"correct and try again.\n");
+// 			fprintf(stderr, "Error %d: %s\n", result, strerror(result));
+// 			exit(result);
+// 		}
+
+// 		ppd=(double) (height / (max_north-min_north));
+// 		yppd=ppd;
+		
+// 		if(debug){
+// 			fprintf(stderr,"ppd %lf, yppd %lf, %.4f,%.4f,%.4f,%.4f,%d x %d\n",ppd,yppd,max_north,min_west,min_north,max_west,width,height);
+// 		}
+
+
+// 		if(yppd<ppd/4){
+// 			fprintf(stderr,"yppd is bad! Check longitudes\n");
+// 			exit(1);
+// 		}
+			
+
+
+
+// 		if(delta>0){
+// 			tx_site[0].lon+=delta;
+// 		}
+
+// 	}else{
+// 		// DEM first
+// 		if(debug){
+// 			fprintf(stderr,"%.4f,%.4f,%.4f,%.4f,%.4f,%.4f\n",max_north,min_west,min_north,max_west,max_lon,min_lon);
+// 		}
+
+// 		//max_lon-=3;
+
+// 		if( (result = LoadTopoData(max_lon, min_lon, max_lat, min_lat)) != 0 ){
+// 			// This only fails on errors loading SDF tiles
+// 			fprintf(stderr, "Error loading topo data\n");
+// 			return result;
+// 		}
+
+// 		if (area_mode || topomap) {
+// 			for (z = 0; z < txsites && z < max_txsites; z++) {
+// 				/* "Ball park" estimates used to load any additional
+// 				   SDF files required to conduct this analysis. */
+
+// 				tx_range =
+// 					sqrt(1.5 *
+// 					 (tx_site[z].alt + GetElevation(tx_site[z])));
+
+// 				if (LRmap)
+// 					rx_range = sqrt(1.5 * altitudeLR);
+// 				else
+// 					rx_range = sqrt(1.5 * altitude);
+
+// 				/* deg_range determines the maximum
+// 				   amount of topo data we read */
+
+// 				deg_range = (tx_range + rx_range) / 57.0;
+
+// 				/* max_range regulates the size of the
+// 				   analysis.  A small, non-zero amount can
+// 				   be used to shrink the size of the analysis
+// 				   and limit the amount of topo data read by
+// 				   ss  A large number will increase the
+// 				   width of the analysis and the size of
+// 				   the map. */
+
+// 				if (max_range == 0.0)
+// 					max_range = tx_range + rx_range;
+
+// 				deg_range = max_range / 57.0;
+
+// 				// No more than 8 degs
+// 				deg_limit = 3.5;
+
+// 				if (fabs(tx_site[z].lat) < 70.0)
+// 					deg_range_lon =
+// 						deg_range / cos(DEG2RAD * tx_site[z].lat);
+// 				else
+// 					deg_range_lon = deg_range / cos(DEG2RAD * 70.0);
+
+// 				/* Correct for squares in degrees not being square in miles */
+
+// 				if (deg_range > deg_limit)
+// 					deg_range = deg_limit;
+
+// 				if (deg_range_lon > deg_limit)
+// 					deg_range_lon = deg_limit;
+
+// 				nortRxHin = (int)floor(tx_site[z].lat - deg_range);
+// 				nortRxHax = (int)floor(tx_site[z].lat + deg_range);
+
+// 				west_min = (int)floor(tx_site[z].lon - deg_range_lon);
+
+// 				while (west_min < 0)
+// 					west_min += 360;
+
+// 				while (west_min >= 360)
+// 					west_min -= 360;
+
+// 				west_max = (int)floor(tx_site[z].lon + deg_range_lon);
+
+// 				while (west_max < 0)
+// 					west_max += 360;
+
+// 				while (west_max >= 360)
+// 					west_max -= 360;
+
+// 				if (nortRxHin < min_lat)
+// 					min_lat = nortRxHin;
+
+// 				if (nortRxHax > max_lat)
+// 					max_lat = nortRxHax;
+
+// 				if (LonDiff(west_min, min_lon) < 0.0)
+// 					min_lon = west_min;
+
+// 				if (LonDiff(west_max, max_lon) >= 0.0)
+// 					max_lon = west_max;
+// 			}
+
+// 			/* Load any additional SDF files, if required */
+
+// 			if( (result = LoadTopoData(max_lon, min_lon, max_lat, min_lat)) != 0 ){
+// 				// This only fails on errors loading SDF tiles
+// 				fprintf(stderr, "Error loading topo data\n");
+// 				return result;
+// 			}
+// 		}
+// 		ppd=(double)ippd;
+// 		yppd=ppd; 
+
+// 		width = (unsigned)(ippd * ReduceAngle(max_west - min_west));
+// 		height = (unsigned)(ippd * ReduceAngle(max_north - min_north));
+// 	}
+
+// 	dpp = 1 / ppd;
+// 	mpi = ippd-1; 
+
+// 	// User defined clutter file
+// 	if( udt_file != NULL && (result = LoadUDT(udt_file)) != 0 ){
+// 		fprintf(stderr, "Error loading clutter file\n");
+// 		return result;
+// 	}
+
+// 	// Enrich with Clutter
+// 	if(strlen(clutter_file) > 1){
+// 		/*
+// 		Clutter tiles cover 16 x 12 degs but we only need a fraction of that area.
+// 		Limit by max_range / miles per degree (at equator)
+// 		*/
+// 		if( (result = loadClutter(clutter_file,max_range/45,tx_site[0])) != 0 ){
+// 			fprintf(stderr, "Error, invalid or clutter file not found\n");
+// 			return result;
+// 		}
+// 	}
+
+// 	if(max_range>100 || LR.frq_mhz==446.446){
+// 		cropping=false;
+// 	}
+// 	if (ppa == 0) {
+// 		if (propmodel == 2) {
+// 			cropping = false;
+// 			PlotLOSMap(tx_site[0], altitudeLR, ano_filename, use_threads);
+// 			DoLOS(mapfile, geo, kml, ngs, tx_site, txsites);
+// 		} else {
+// 			// 90% of effort here
+// 			PlotPropagation(tx_site[0], altitudeLR, ano_filename,
+// 					propmodel, knifeedge, haf, pmenv, use_threads);
+
+//                         if(debug)
+//                         	fprintf(stderr,"Finished PlotPropagation()\n");
+
+
+// 				// nearfield void
+
+// 				for (float x=-0.001; x<0.001;x=x+0.0001){
+// 					for (float y=-0.001; y<0.001;y=y+0.0001){
+// 						if(GetSignal(tx_site[0].lat+y, tx_site[0].lon+x)<=0){
+// 							PutSignal(tx_site[0].lat+y, tx_site[0].lon+x, hottest);
+// 						}
+// 					}
+// 				}
+
+// 			if(cropping){
+// 				// CROPPING. Factor is determined in propPathLoss().
+// 				// cropLon is the circle radius in pixels at it's widest (east/west) 
+// 				cropLon*=dpp; // pixels to degrees
+// 				max_north=cropLat; // degrees
+// 				max_west=cropLon+tx_site[0].lon; // degrees west (positive)
+// 				cropLat-=tx_site[0].lat; // angle from tx to edge
+
+			
+// 				if(debug)
+// 					fprintf(stderr,"Cropping 1: max_west: %.4f cropLat: %.4f cropLon: %.4f longitude: %.5f dpp %.7f\n",max_west,cropLat,cropLon,tx_site[0].lon,dpp);
+// 					width=(int)((cropLon*ppd)*2);
+// 					height=(int)((cropLat*ppd)*2);
+
+// 					if(debug)
+// 						fprintf(stderr,"Cropping 2: max_west: %.4f cropLat: %.4f cropLon: %.7f longitude: %.5f width %d\n",max_west,cropLat,cropLon,tx_site[0].lon,width);
+
+// 					if(width>3600*10 || cropLon < 0){
+// 						fprintf(stderr,"FATAL BOUNDS! max_west: %.4f cropLat: %.4f cropLon: %.7f longitude: %.5f\n",max_west,cropLat,cropLon,tx_site[0].lon);
+// 						return 0;
+// 					}
+// 			}
+
+// 			// Write bitmap
+// 			if (LR.erp == 0.0)
+// 				DoPathLoss(mapfile, geo, kml, ngs, tx_site,
+// 					   txsites);
+// 			else if (dbm)
+// 				DoRxdPwr((to_stdout == true ? NULL : mapfile), geo, kml, ngs, tx_site,
+// 					 txsites);
+// 			else
+// 				if( (result = DoSigStr(mapfile, geo, kml, ngs, tx_site,txsites)) != 0 )
+// 					return result;
+// 		}
+// 		/*if(lidar){
+// 			east=eastoffset;
+// 			west=westoffset;
+// 		}*/
+
+// 		if (tx_site[0].lon > 0.0){
+// 					tx_site[0].lon *= -1;
+// 		}
+// 		if (tx_site[0].lon < -180.0){
+// 			tx_site[0].lon += 360;
+// 		}
+
+// 		if (cropping) {
+// 			fprintf(stderr, "|%.6f", tx_site[0].lat+cropLat);
+// 			fprintf(stderr, "|%.6f", tx_site[0].lon+cropLon);
+// 			fprintf(stderr, "|%.6f", tx_site[0].lat-cropLat);
+// 			fprintf(stderr, "|%.6f|",tx_site[0].lon-cropLon);
+// 		}else{
+// 			fprintf(stderr, "|%.6f", max_north);
+// 			fprintf(stderr, "|%.6f", east);
+// 			fprintf(stderr, "|%.6f", min_north);
+// 			fprintf(stderr, "|%.6f|",west);
+// 		}
+// 		fprintf(stderr, "\n");
+
+
+// 	} else {
+// 		strncpy(tx_site[0].name, "Tx", 3);
+// 		strncpy(tx_site[1].name, "Rx", 3);
+// 		PlotPath(tx_site[0], tx_site[1], 1);
+// 		PathReport(tx_site[0], tx_site[1], tx_site[0].filename, 0,
+// 			   propmodel, pmenv, rxGain);
+// 		// Order flipped for benefit of graph. Makes no difference to data.
+// 		SeriesData(tx_site[1], tx_site[0], tx_site[0].filename, 1,
+// 			   normalise);
+// 	}
+// 	fflush(stderr);
+ }
