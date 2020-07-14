@@ -37,6 +37,7 @@ double version = 3.10;
 #include "models/pel.hh"
 #include "image.hh"
 
+/*RESOLUTION*/
 int MAXPAGES = 10*10;
 int IPPD = 1200;
 int ARRAYSIZE = (MAXPAGES * IPPD) + 10;
@@ -295,9 +296,9 @@ double GetElevation(struct site location)
 	for (indx = 0, found = 0; indx < MAXPAGES && found == 0;) {
 		// std::cout << "loc_lat" << location.lat << std::endl;
 		x = (int)rint(ppd * (location.lat - dem[indx].min_north));
-		y = mpi -
-		    (int)rint(yppd *
+		y = mpi - (int)rint(yppd *
 			      (LonDiff(dem[indx].max_west, location.lon)));
+		
 
 		if (x >= 0 && x <= mpi && y >= 0 && y <= mpi)
 			found = 1;
@@ -305,8 +306,10 @@ double GetElevation(struct site location)
 			indx++;
 	}
 
-	if (found)
+	if (found){
 		elevation = 3.28084 * dem[indx].data[x][y];
+		//std::cout << "elevation: " << elevation << std::endl;
+	}
 	else
 		elevation = -5000.0;
 
@@ -491,9 +494,9 @@ void ReadPath(struct site source, struct site destination)
 	azimuth = Azimuth(source, destination) * DEG2RAD;
 
 	total_distance = Distance(source, destination);
-
+	//std::cout << "ppd: " << ppd << ", total_distance: "<< total_distance << std::endl;
 	if (total_distance > (30.0 / ppd)) {
-		std::cout << "0" << std::endl;
+		//std::cout << "in" << std::endl;
 		dx = samples_per_radian * acos(cos(lon1 - lon2));
 		dy = samples_per_radian * acos(cos(lat1 - lat2));
 		path_length = sqrt((dx * dx) + (dy * dy));
@@ -501,7 +504,7 @@ void ReadPath(struct site source, struct site destination)
 	}
 
 	else {
-		std::cout << "1" << std::endl;
+		//std::cout << "1" << std::endl;
 		c = 0;
 		dx = 0.0;
 		dy = 0.0;
@@ -558,6 +561,7 @@ void ReadPath(struct site source, struct site destination)
 		path.lon[c] = lon2;
 		tempsite.lat = lat2;
 		tempsite.lon = lon2;
+		//std::cout << "lat: " << tempsite.lat << "lon: " << tempsite.lon << std::endl;
 		path.elevation[c] = GetElevation(tempsite);
 		//std::cout << "path lat, lon, elevation: " << path.lat[c] << " - " << path.lon[c] << " - "<< path.elevation[c] << std::endl;
 		// fix for tile gaps in multi-tile LIDAR plots
@@ -966,7 +970,7 @@ void ObstructionAnalysis(struct site xmtr, struct site rcvr, double f,
 
 }
 
-static void free_dem(void)
+void free_dem(void)
 {
 	int i;
 	int j;
@@ -1183,11 +1187,6 @@ void getMain(){
 	LR.conf = 0.50;
 	LR.rel = 0.50;
 	LR.erp = 0.0;		// will default to Path Loss
-
-	tx_site[0].lat = 91.0;
-	tx_site[0].lon = 361.0;
-	tx_site[1].lat = 91.0;
-	tx_site[1].lon = 361.0;
 
 // 	/* Scan for command line arguments */
 

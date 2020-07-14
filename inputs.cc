@@ -489,18 +489,15 @@ int LoadSDF_SDF(char *name)
 	sdf_file[x] = 0;
 
 	
-	std::cout << sdf_file << std::endl;
 	/* Parse filename for minimum latitude and longitude values */
 	if( sscanf(sdf_file, "%d:%d:%d:%d", &minlat, &maxlat, &minlon, &maxlon) != 4 )
 		return -EINVAL;
-	// std::cout << dem[indx].min_north << ", " << dem[indx].min_west << ", " << dem[indx].max_north << dem[indx].max_west << std::endl;
-	//std::cout << "x " << minlat << ", x + 1 " << maxlat << ", ymin " << minlon << ", ymax " << maxlon << std::endl;
+
 	sdf_file[x] = '.';
 	sdf_file[x + 1] = 's';
 	sdf_file[x + 2] = 'd';
 	sdf_file[x + 3] = 'f';
 	sdf_file[x + 4] = 0;
-	// std::cout << "found: " <<  sdf_file[x + 4] << std::endl;
 	
 	/* Is it already in memory? */
 	
@@ -568,6 +565,7 @@ int LoadSDF_SDF(char *name)
 		   Each .sdf tile contains 1200x1200 = 1.44M 'points'
 		   Each point is sampled for 1200 resolution!
 		 */
+		
 		for (x = 0; x < ippd; x++) {
 			for (y = 0; y < ippd; y++) {
 
@@ -609,7 +607,7 @@ int LoadSDF_SDF(char *name)
 				}
 			}
 		}
-
+		//std::cout << "max_elev: " << dem[indx].max_el << std::endl;
 		fclose(fd);
 
 		if (dem[indx].min_el < min_elevation)
@@ -682,7 +680,7 @@ int LoadSDF(char *name)
 	int return_value = -1;
 
 	return_value = LoadSDF_SDF(name);
-
+	
 	/* If neither format can be found, then assume the area is water. */
 
 	if ( return_value == 0 || return_value < 0 ) {
@@ -788,7 +786,6 @@ int LoadSDF(char *name)
 			return_value = 1;
 		}
 	}
-
 	return return_value;
 }
 
@@ -1630,16 +1627,11 @@ int LoadTopoData(int max_lon, int min_lon, int max_lat, int min_lat)
 	int success;
 
 	width = ReduceAngle(max_lon - min_lon);
+	std::cout << "width: " << width << std::endl;
 	if ((max_lon - min_lon) <= 180.0) {
 		for (y = 0; y <= width; y++)
 			for (x = min_lat; x <= max_lat; x++) {
 				ymin = (int)(min_lon + (double)y);
-
-				if(ymin < 0){
-					ymin *= -1;
-					ymax = ymin;
-					ymin = ymax - 1; 
-				}
 
 				while (ymin < 0)
 					ymin += 360;
@@ -1663,7 +1655,7 @@ int LoadTopoData(int max_lon, int min_lon, int max_lat, int min_lat)
 						snprintf(string, 16,
 							 "%d:%d:%d:%d", x,
 							 x + 1, ymin, ymax);
-
+				
 				std::cout << "string: " << string << std::endl;
 				if( (success = LoadSDF(string)) < 0 ){
 					return -success;

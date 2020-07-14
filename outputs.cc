@@ -305,20 +305,20 @@ void PathReport(struct site source, struct site destination, char *name, int pro
 		/* Copy elevations plus clutter along
 		   path into the elev[] array. */
 
-		for (x = 1; x < path.length - 1; x++)
+		for (x = 1; x < path.length - 1; x++){
 			elev[x + 2] =
 			    METERS_PER_FOOT * (path.elevation[x] ==
 					       0.0 ? path.
 					       elevation[x] : (clutter +
 							       path.
 							       elevation[x]));
-
+			//std::cout << "path_elevation: " << path.elevation[x] << ", elev: " << elev[x+2] << std::endl;
+		}
 		/* Copy ending points without clutter */
 
 		elev[2] = path.elevation[0] * METERS_PER_FOOT;
-		elev[path.length + 1] =
-		    path.elevation[path.length - 1] * METERS_PER_FOOT;
-
+		elev[path.length + 1] = path.elevation[path.length - 1] * METERS_PER_FOOT;
+		//std::cout << "ending_points, elev[2]: " << elev[2] << std::endl; 
 		azimuth = rint(Azimuth(source, destination));
 		
 		for (y = 2; y < (path.length - 1); y++) {	/* path.length-1 avoids LR error */
@@ -399,17 +399,17 @@ void PathReport(struct site source, struct site destination, char *name, int pro
 			   strmode, errnum);
 			 */
 			dkm = (elev[1] * elev[0]) / 1000;	// km
-			// std::cout << "frq: " << LR.frq_mhz <<  ", tx: " << source.alt * METERS_PER_FOOT << ", h_M: " << 
+			//std::cout <<  "ELEV: " << path.elevation[y] << std::endl;
+			// std::cout <<  "h_tx: " << source.alt * METERS_PER_FOOT << ", h_M: " << 
 			// 			 (path.elevation[y] * METERS_PER_FOOT) +
 			// 			 (destination.alt * METERS_PER_FOOT) << std::endl <<" d: "<<  dkm << ", pmenv: "<<  pmenv << std::endl;
-			switch (propmodel) {
-			
+			switch (propmodel) {	
 			case 1:
 				//HATA 1, 2 & 3
 				loss =
 				    HATApathLoss(LR.frq_mhz, source.alt * METERS_PER_FOOT,
-						 (path.elevation[y] * METERS_PER_FOOT) +
-						 (destination.alt * METERS_PER_FOOT), dkm, pmenv);
+						 (path.elevation[y] * METERS_PER_FOOT) + (destination.alt * METERS_PER_FOOT), 
+						 dkm, pmenv);
 				break;
 			
 			case 2:
@@ -452,7 +452,7 @@ void PathReport(struct site source, struct site destination, char *name, int pro
 			if (total_loss < minloss)
 				minloss = total_loss;
 			
-			//std::cout << "loss: " << loss << ", total loss: " << total_loss << std::endl;
+			std::cout << "loss: " << loss << ", total loss: " << total_loss << std::endl;
 		}
 
 		distance = Distance(source, destination);
@@ -570,10 +570,10 @@ void PathReport(struct site source, struct site destination, char *name, int pro
 	ObstructionAnalysis(source, destination, LR.frq_mhz, fd2);
 	fclose(fd2);
 
-	fprintf(stderr,
-		"Path loss (dB), Received Power (dBm), Field strength (dBuV):\n%.1f\n%.1f\n%.1f",
-		loss, dBm, field_strength);
-
+	// fprintf(stderr,
+	// 	"Path loss (dB), Received Power (dBm), Field strength (dBuV):\n%.1f\n%.1f\n%.1f",
+	// 	loss, dBm, field_strength);
+	std::cout << std::endl;
 	// /* Skip plotting the graph if ONLY a path-loss report is needed. */
 
 	// if (graph_it) {

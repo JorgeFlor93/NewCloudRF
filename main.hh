@@ -44,6 +44,7 @@ double miles_to_km(double miles);
 
 
 void free_elev(void);
+void free_dem(void);
 void free_path(void);
 void alloc_elev(void);
 void alloc_path(void);

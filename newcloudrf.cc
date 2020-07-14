@@ -23,31 +23,38 @@ int main(int argc, char *argv[]){
     float f = 5000, d, height_Base = 100, height_Mobile = 2; /*Tx_h y Rx_h, freq, distance*/
     int num_model = 0, mode = 2/*mode SUBURBAN*/;
     int x; int y;
-    /* SDF atributtes */
-   
-    int min_lat = 0, min_lon = 0, max_lat = 0, max_lon = 0, rxlat = 0, rxlon = 0, txlat = 0, txlon = 0;
-    int nortRxHax;
-    int debug = 0, result, nortRxHin, west_min, west_max, z = 0;
-    double tx_range = 0.0; double rx_range = 0.0; double deg_range = 0.0; double max_range = 1.0; double deg_limit = 0.0; double deg_range_lon = 0.0; double altitudeLR = 0.0; double altitude = 0.0;
-    unsigned char area_mode = 0; unsigned char topomap = 0; unsigned char max_txsites = 30; unsigned char txsites = 0; unsigned char LRmap = 1;
     
-    std::vector<std::string> type;
+    /* SDF atributtes */  
+    int min_lat = 0, min_lon = 0, max_lat = 0, max_lon = 0, rxlat = 0, rxlon = 0, txlat = 0, txlon = 0;
+    int debug = 0, result, nortRxHin, west_min, west_max, z = 0;
+    
+    struct site antennas[2];
 
-    std::vector<Eigen::Matrix<double, 1, 2>> point_list;
+    /* Inicializamos vaiables*/ 
+    MAXRAD = 200; 
+    antennas[0].lat = 91.0;
+	antennas[0].lon = 361.0;
+	antennas[1].lat = 91.0;
+	antennas[1].lon = 361.0;
+    
+    getMain();
+    do_allocs();
+    LR.frq_mhz = f;
 
     /* -lat 51.849 -lon -2.2299 */
-
-    struct site antennas[2];
     /*Tx*/  
     antennas[0] = {51.349, -2.2299, height_Base}; 
     /*Rx*/
     antennas[1] = {51.449, -2.2399, height_Mobile}; //point to point receptor
 
-    LR.frq_mhz = f;
-    /* Inicializamos vaiables*/
-    do_allocs();
-    getMain();
     /* LOAD SDF INFO */
+
+    antennas[0].lon *= -1;
+    if (antennas[0].lon < 0.0)
+        antennas[0].lon += 360.0; 
+    antennas[1].lon *= -1;
+    if (antennas[1].lon < 0.0)
+        antennas[1].lon += 360.0;
 
     if (sdf_path[0]) {
     x = strlen(sdf_path);
@@ -98,14 +105,19 @@ int main(int argc, char *argv[]){
         max_lon = rxlon;
 	
     result = LoadTopoData(max_lon, min_lon, max_lat, min_lat);
-
     ppd = (double)ippd;
     yppd=ppd; 
     dpp = 1 / ppd;
  	mpi = ippd-1;
+
     /* Calculate PATH LOSS*/ 
+    
     PathReport(antennas[0], antennas[1], antennas[0].filename, 1, 3, 0);
 
+    free_dem();
+    free_elev();
+    free_path();
+    fflush(stderr);
     return 0;
 }
 
