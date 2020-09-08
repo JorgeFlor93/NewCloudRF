@@ -41,6 +41,7 @@ struct site {
 	double lat;
 	double lon;
 	float alt;
+	double loss;
 	char name[50];
 	char filename[255];
 };

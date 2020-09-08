@@ -522,7 +522,7 @@ int LoadSDF_SDF(char *name)
 		/* Search for SDF file in current working directory first */
 
 		strncpy(path_plus_name, sdf_file, sizeof(path_plus_name)-1);
-		std::cout << path_plus_name << std::endl;
+		//std::cout << path_plus_name << std::endl;
 		if( (fd = fopen(path_plus_name, "rb")) == NULL ){
 			/* Next, try loading SDF file from path specified
 			   in $HOME/.ss_path file or by -d argument */
@@ -1627,7 +1627,6 @@ int LoadTopoData(int max_lon, int min_lon, int max_lat, int min_lat)
 	int success;
 
 	width = ReduceAngle(max_lon - min_lon);
-	std::cout << "width: " << width << std::endl;
 	if ((max_lon - min_lon) <= 180.0) {
 		for (y = 0; y <= width; y++)
 			for (x = min_lat; x <= max_lat; x++) {
@@ -1656,7 +1655,7 @@ int LoadTopoData(int max_lon, int min_lon, int max_lat, int min_lat)
 							 "%d:%d:%d:%d", x,
 							 x + 1, ymin, ymax);
 				
-				std::cout << "string: " << string << std::endl;
+				//std::cout << "string: " << string << std::endl;
 				if( (success = LoadSDF(string)) < 0 ){
 					return -success;
 				}

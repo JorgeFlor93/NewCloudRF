@@ -14,7 +14,10 @@
 #include "models/itwom3.0.hh"
 #include "models/sui.hh"
 
-void PathReport(struct site source, struct site destination, char *name, int propmodel, int pmenv, double rxGain)
+/*Usamos esta función para calcular las pérdidas. 
+Esta función inicialmente escribe en un fichero las caracteristicas de propagacion entre afuente-destino luego puede servirnos para obtener más parámetros.*/
+
+double PathReport(struct site source, struct site destination, char *name, int propmodel, int pmenv, double rxGain)
 {
 	/* This function writes a PPA Path Report (name.txt) to
 	   the filesystem.  If (graph_it == 1), then gnuplot is invoked
@@ -37,271 +40,268 @@ void PathReport(struct site source, struct site destination, char *name, int pro
 	    0.0, voltage, rxp, power_density, dkm;
 	FILE *fd = NULL, *fd2 = NULL;
 
-	snprintf(report_name, 80, "%s.txt%c", name, 0);
+	// snprintf(report_name, 80, "%s.txt%c", name, 0);
 	four_thirds_earth = FOUR_THIRDS * EARTHRADIUS;
-
 	fd2 = fopen(report_name, "w");
 
-	fprintf(fd2, "\n\t\t--==[ Path Profile Analysis ]==--\n\n");
-	fprintf(fd2, "Transmitter site: %s\n", source.name);
+	// fprintf(fd2, "\n\t\t--==[ Path Profile Analysis ]==--\n\n");
+	// fprintf(fd2, "Transmitter site: %s\n", source.name);
 
-	if (source.lat >= 0.0) {
+	// if (source.lat >= 0.0) {
 
-		if (source.lon <= 180){
-			fprintf(fd2, "Site location: %.4f, -%.4f\n",source.lat, source.lon);
-		}else{
-			fprintf(fd2, "Site location: %.4f, %.4f\n",source.lat, 360 - source.lon);
-		}
-	}
+	// 	if (source.lon <= 180){
+	// 		fprintf(fd2, "Site location: %.4f, -%.4f\n",source.lat, source.lon);
+	// 	}else{
+	// 		fprintf(fd2, "Site location: %.4f, %.4f\n",source.lat, 360 - source.lon);
+	// 	}
+	// }
 
-	else {
+	// else {
 
-		if (source.lon <= 180){
-			fprintf(fd2, "Site location: %.4f, -%.4f\n",source.lat, source.lon);
-		}else{
-			fprintf(fd2, "Site location: %.4f, %.4f\n",source.lat, 360 - source.lon);
-		}
-	}
+	// 	if (source.lon <= 180){
+	// 		fprintf(fd2, "Site location: %.4f, -%.4f\n",source.lat, source.lon);
+	// 	}else{
+	// 		fprintf(fd2, "Site location: %.4f, %.4f\n",source.lat, 360 - source.lon);
+	// 	}
+	// }
 
-	if (metric) {
-		fprintf(fd2, "Ground elevation: %.2f meters AMSL\n",
-			METERS_PER_FOOT * GetElevation(source));
-		fprintf(fd2,
-			"Antenna height: %.2f meters AGL / %.2f meters AMSL\n",
-			METERS_PER_FOOT * source.alt,
-			METERS_PER_FOOT * (source.alt + GetElevation(source)));
-	}
-	else { // se guarda en un puntero a fichero datos elevación de tx
-		fprintf(fd2, "Ground elevation: %.2f feet AMSL\n",
-			GetElevation(source));
-		fprintf(fd2, "Antenna height: %.2f feet AGL / %.2f feet AMSL\n",
-			source.alt, source.alt + GetElevation(source));
-	}
+	// if (metric) {
+	// 	fprintf(fd2, "Ground elevation: %.2f meters AMSL\n",
+	// 		METERS_PER_FOOT * GetElevation(source));
+	// 	fprintf(fd2,
+	// 		"Antenna height: %.2f meters AGL / %.2f meters AMSL\n",
+	// 		METERS_PER_FOOT * source.alt,
+	// 		METERS_PER_FOOT * (source.alt + GetElevation(source)));
+	// }
+	// else { // se guarda en un puntero a fichero datos elevación de tx
+	// 	fprintf(fd2, "Ground elevation: %.2f feet AMSL\n",
+	// 		GetElevation(source));
+	// 	fprintf(fd2, "Antenna height: %.2f feet AGL / %.2f feet AMSL\n",
+	// 		source.alt, source.alt + GetElevation(source));
+	// }
 
 	azimuth = Azimuth(source, destination);
 	angle1 = ElevationAngle(source, destination);
 	angle2 = ElevationAngle2(source, destination, earthradius);
 
-		x = (int)rint(10.0 * (10.0 - angle2));
+	x = (int)rint(10.0 * (10.0 - angle2));
 
-		if (x >= 0 && x <= 1000)
-			pattern =
-			    (double)LR.antenna_pattern[(int)rint(azimuth)][x];
+	if (x >= 0 && x <= 1000){
+		pattern =(double)LR.antenna_pattern[(int)rint(azimuth)][x];
+	}
+	patterndB = 20.0 * log10(pattern);
 
-		patterndB = 20.0 * log10(pattern);
+	// if (metric)
+	// 	fprintf(fd2, "Distance to %s: %.2f kilometers\n",
+	// 		destination.name, KM_PER_MILE * Distance(source,
+	// 							 destination));
 
-	if (metric)
-		fprintf(fd2, "Distance to %s: %.2f kilometers\n",
-			destination.name, KM_PER_MILE * Distance(source,
-								 destination));
+	// else
+	// 	fprintf(fd2, "Distance to %s: %.2f miles\n", destination.name,
+	// 		Distance(source, destination));
 
-	else
-		fprintf(fd2, "Distance to %s: %.2f miles\n", destination.name,
-			Distance(source, destination));
-
-	fprintf(fd2, "Azimuth to %s: %.2f degrees grid\n", destination.name,
-		azimuth);
+	// fprintf(fd2, "Azimuth to %s: %.2f degrees grid\n", destination.name,
+	// 	azimuth);
 
 
-	fprintf(fd2, "Downtilt angle to %s: %+.4f degrees\n",
-		destination.name, angle1);
+	// fprintf(fd2, "Downtilt angle to %s: %+.4f degrees\n",
+	// 	destination.name, angle1);
 
 
 
 	/* Receiver */
 
-	fprintf(fd2, "\nReceiver site: %s\n", destination.name);
+	// fprintf(fd2, "\nReceiver site: %s\n", destination.name);
 
-	if (destination.lat >= 0.0) {
+	// if (destination.lat >= 0.0) {
 
-		if (destination.lon <= 180){
-			fprintf(fd2, "Site location: %.4f, -%.4f\n",destination.lat, destination.lon);
-		}else{
-			fprintf(fd2, "Site location: %.4f, %.4f\n",destination.lat, 360 - destination.lon);
-		}
-	}
+	// 	if (destination.lon <= 180){
+	// 		fprintf(fd2, "Site location: %.4f, -%.4f\n",destination.lat, destination.lon);
+	// 	}else{
+	// 		fprintf(fd2, "Site location: %.4f, %.4f\n",destination.lat, 360 - destination.lon);
+	// 	}
+	// }
 
-	else {
+	// else {
 
-		if (destination.lon <= 180){
-			fprintf(fd2, "Site location: %.4f, -%.4f\n",destination.lat, destination.lon);
-		}else{
-			fprintf(fd2, "Site location: %.4f, %.4f\n",destination.lat, 360 - destination.lon);
-		}
-	}
+	// 	if (destination.lon <= 180){
+	// 		fprintf(fd2, "Site location: %.4f, -%.4f\n",destination.lat, destination.lon);
+	// 	}else{
+	// 		fprintf(fd2, "Site location: %.4f, %.4f\n",destination.lat, 360 - destination.lon);
+	// 	}
+	// }
 
-	if (metric) {
-		fprintf(fd2, "Ground elevation: %.2f meters AMSL\n",
-			METERS_PER_FOOT * GetElevation(destination));
-		fprintf(fd2,
-			"Antenna height: %.2f meters AGL / %.2f meters AMSL\n",
-			METERS_PER_FOOT * destination.alt,
-			METERS_PER_FOOT * (destination.alt +
-					   GetElevation(destination)));
-	}
+	// if (metric) {
+	// 	fprintf(fd2, "Ground elevation: %.2f meters AMSL\n",
+	// 		METERS_PER_FOOT * GetElevation(destination));
+	// 	fprintf(fd2,
+	// 		"Antenna height: %.2f meters AGL / %.2f meters AMSL\n",
+	// 		METERS_PER_FOOT * destination.alt,
+	// 		METERS_PER_FOOT * (destination.alt +
+	// 				   GetElevation(destination)));
+	// }
 
-	else {
-		fprintf(fd2, "Ground elevation: %.2f feet AMSL\n",
-			GetElevation(destination));
-		fprintf(fd2, "Antenna height: %.2f feet AGL / %.2f feet AMSL\n",
-			destination.alt,
-			destination.alt + GetElevation(destination));
-	}
+	// else {
+	// 	fprintf(fd2, "Ground elevation: %.2f feet AMSL\n",
+	// 		GetElevation(destination));
+	// 	fprintf(fd2, "Antenna height: %.2f feet AGL / %.2f feet AMSL\n",
+	// 		destination.alt,
+	// 		destination.alt + GetElevation(destination));
+	// }
 
-	if (metric)
-		fprintf(fd2, "Distance to %s: %.2f kilometers\n", source.name,
-			KM_PER_MILE * Distance(source, destination));
+	// if (metric)
+	// 	fprintf(fd2, "Distance to %s: %.2f kilometers\n", source.name,
+	// 		KM_PER_MILE * Distance(source, destination));
 
-	else
-		fprintf(fd2, "Distance to %s: %.2f miles\n", source.name,
-			Distance(source, destination));
+	// else
+	// 	fprintf(fd2, "Distance to %s: %.2f miles\n", source.name,
+	// 		Distance(source, destination));
 
 	azimuth = Azimuth(destination, source);
 
 	angle1 = ElevationAngle(destination, source);
 	angle2 = ElevationAngle2(destination, source, earthradius);
 
-	fprintf(fd2, "Azimuth to %s: %.2f degrees grid\n", source.name, azimuth);
+	// fprintf(fd2, "Azimuth to %s: %.2f degrees grid\n", source.name, azimuth);
 
 
-	fprintf(fd2, "Downtilt angle to %s: %+.4f degrees\n",
-		source.name, angle1);
+	// fprintf(fd2, "Downtilt angle to %s: %+.4f degrees\n",
+	// 	source.name, angle1);
 
-	if (LR.frq_mhz > 0.0) {
-		fprintf(fd2, "\n\nPropagation model: ");
+	// if (LR.frq_mhz > 0.0) {
+	// 	fprintf(fd2, "\n\nPropagation model: ");
 
-		switch (propmodel) {
-		case 1:
-			fprintf(fd2, "Okumura-Hata\n");
-			break;
-		case 2:
-			fprintf(fd2, "Free space path loss (ITU-R.525)\n");
-			break;
-		}
+	// 	switch (propmodel) {
+	// 	case 1:
+	// 		fprintf(fd2, "Okumura-Hata\n");
+	// 		break;
+	// 	case 2:
+	// 		fprintf(fd2, "Free space path loss (ITU-R.525)\n");
+	// 		break;
+	// 	}
 
-		fprintf(fd2, "Model sub-type: ");
+	// 	fprintf(fd2, "Model sub-type: ");
 
-		switch (pmenv) {
-		case 1:
-			fprintf(fd2, "City / Conservative\n");
-			break;
-		case 2:
-			fprintf(fd2, "Suburban / Average\n");
-			break;
-		case 3:
-			fprintf(fd2, "Rural / Optimistic\n");
-			break;
-		}
-		// fprintf(fd2, "Earth's Dielectric Constant: %.3lf\n",
-		// 	LR.eps_dielect);
-		// fprintf(fd2, "Earth's Conductivity: %.3lf Siemens/meter\n",
-		// 	LR.sgm_conductivity);
-		// fprintf(fd2,
-		// 	"Atmospheric Bending Constant (N-units): %.3lf ppm\n",
-		// 	LR.eno_ns_surfref);
-		fprintf(fd2, "Frequency: %.3lf MHz\n", LR.frq_mhz);
-		// fprintf(fd2, "Radio Climate: %d (", LR.radio_climate);
+	// 	switch (pmenv) {
+	// 	case 1:
+	// 		fprintf(fd2, "City / Conservative\n");
+	// 		break;
+	// 	case 2:
+	// 		fprintf(fd2, "Suburban / Average\n");
+	// 		break;
+	// 	case 3:
+	// 		fprintf(fd2, "Rural / Optimistic\n");
+	// 		break;
+	// 	}
+	// 	fprintf(fd2, "Earth's Dielectric Constant: %.3lf\n",
+	// 		LR.eps_dielect);
+	// 	fprintf(fd2, "Earth's Conductivity: %.3lf Siemens/meter\n",
+	// 		LR.sgm_conductivity);
+	// 	fprintf(fd2,
+	// 		"Atmospheric Bending Constant (N-units): %.3lf ppm\n",
+	// 		LR.eno_ns_surfref);
+	// 	fprintf(fd2, "Frequency: %.3lf MHz\n", LR.frq_mhz);
+	// 	fprintf(fd2, "Radio Climate: %d (", LR.radio_climate);
 
-		switch (LR.radio_climate) {
-		case 1:
-			fprintf(fd2, "Equatorial");
-			break;
+	// 	switch (LR.radio_climate) {
+	// 	case 1:
+	// 		fprintf(fd2, "Equatorial");
+	// 		break;
 
-		case 2:
-			fprintf(fd2, "Continental Subtropical");
-			break;
+	// 	case 2:
+	// 		fprintf(fd2, "Continental Subtropical");
+	// 		break;
 
-		case 3:
-			fprintf(fd2, "Maritime Subtropical");
-			break;
+	// 	case 3:
+	// 		fprintf(fd2, "Maritime Subtropical");
+	// 		break;
 
-		case 4:
-			fprintf(fd2, "Desert");
-			break;
+	// 	case 4:
+	// 		fprintf(fd2, "Desert");
+	// 		break;
 
-		case 5:
-			fprintf(fd2, "Continental Temperate");
-			break;
+	// 	case 5:
+	// 		fprintf(fd2, "Continental Temperate");
+	// 		break;
 
-		case 6:
-			fprintf(fd2, "Maritime Temperate, Over Land");
-			break;
+	// 	case 6:
+	// 		fprintf(fd2, "Maritime Temperate, Over Land");
+	// 		break;
 
-		case 7:
-			fprintf(fd2, "Maritime Temperate, Over Sea");
-			break;
+	// 	case 7:
+	// 		fprintf(fd2, "Maritime Temperate, Over Sea");
+	// 		break;
 
-		default:
-			fprintf(fd2, "Unknown");
-		}
+	// 	default:
+	// 		fprintf(fd2, "Unknown");
+	// 	}
 
-		fprintf(fd2, ")\nPolarisation: %d (", LR.pol);
+	// 	fprintf(fd2, ")\nPolarisation: %d (", LR.pol);
 
-		if (LR.pol == 0)
-			fprintf(fd2, "Horizontal");
+	// 	if (LR.pol == 0)
+	// 		fprintf(fd2, "Horizontal");
 
-		if (LR.pol == 1)
-			fprintf(fd2, "Vertical");
+	// 	if (LR.pol == 1)
+	// 		fprintf(fd2, "Vertical");
 
-		fprintf(fd2, ")\nFraction of Situations: %.1lf%c\n",
-			LR.conf * 100.0, 37);
-		fprintf(fd2, "Fraction of Time: %.1lf%c\n", LR.rel * 100.0, 37);
+	// 	fprintf(fd2, ")\nFraction of Situations: %.1lf%c\n",
+	// 		LR.conf * 100.0, 37);
+	// 	fprintf(fd2, "Fraction of Time: %.1lf%c\n", LR.rel * 100.0, 37);
 
 		if (LR.erp != 0.0) {
-			fprintf(fd2, "\nReceiver gain: %.1f dBd / %.1f dBi\n", rxGain, rxGain+2.14);
-			fprintf(fd2, "Transmitter ERP plus Receiver gain: ");
+			// fprintf(fd2, "\nReceiver gain: %.1f dBd / %.1f dBi\n", rxGain, rxGain+2.14);
+			// fprintf(fd2, "Transmitter ERP plus Receiver gain: ");
 
-			if (LR.erp < 1.0)
-				fprintf(fd2, "%.1lf milliwatts",
-					1000.0 * LR.erp);
+			// if (LR.erp < 1.0)
+			// 	fprintf(fd2, "%.1lf milliwatts",
+			// 		1000.0 * LR.erp);
 
-			if (LR.erp >= 1.0 && LR.erp < 10.0)
-				fprintf(fd2, "%.1lf Watts", LR.erp);
+			// if (LR.erp >= 1.0 && LR.erp < 10.0)
+			// 	fprintf(fd2, "%.1lf Watts", LR.erp);
 
-			if (LR.erp >= 10.0 && LR.erp < 10.0e3)
-				fprintf(fd2, "%.0lf Watts", LR.erp);
+			// if (LR.erp >= 10.0 && LR.erp < 10.0e3)
+			// 	fprintf(fd2, "%.0lf Watts", LR.erp);
 
-			if (LR.erp >= 10.0e3)
-				fprintf(fd2, "%.3lf kilowatts", LR.erp / 1.0e3);
+			// if (LR.erp >= 10.0e3)
+			// 	fprintf(fd2, "%.3lf kilowatts", LR.erp / 1.0e3);
 
 			dBm = 10.0 * (log10(LR.erp * 1000.0));
-			fprintf(fd2, " (%+.2f dBm)\n", dBm);
-			fprintf(fd2, "Transmitter ERP minus Receiver gain: %.2f dBm\n", dBm-rxGain);
+			// fprintf(fd2, " (%+.2f dBm)\n", dBm);
+			// fprintf(fd2, "Transmitter ERP minus Receiver gain: %.2f dBm\n", dBm-rxGain);
 
 			/* EIRP = ERP + 2.14 dB */
 
-			fprintf(fd2, "Transmitter EIRP plus Receiver gain: ");
+			// fprintf(fd2, "Transmitter EIRP plus Receiver gain: ");
 
 			eirp = LR.erp * 1.636816521;
 
-			if (eirp < 1.0)
-				fprintf(fd2, "%.1lf milliwatts", 1000.0 * eirp);
+			// if (eirp < 1.0)
+			// 	fprintf(fd2, "%.1lf milliwatts", 1000.0 * eirp);
 
-			if (eirp >= 1.0 && eirp < 10.0)
-				fprintf(fd2, "%.1lf Watts", eirp);
+			// if (eirp >= 1.0 && eirp < 10.0)
+			// 	fprintf(fd2, "%.1lf Watts", eirp);
 
-			if (eirp >= 10.0 && eirp < 10.0e3)
-				fprintf(fd2, "%.0lf Watts", eirp);
+			// if (eirp >= 10.0 && eirp < 10.0e3)
+			// 	fprintf(fd2, "%.0lf Watts", eirp);
 
-			if (eirp >= 10.0e3)
-				fprintf(fd2, "%.3lf kilowatts", eirp / 1.0e3);
+			// if (eirp >= 10.0e3)
+			// 	fprintf(fd2, "%.3lf kilowatts", eirp / 1.0e3);
 
 			dBm = 10.0 * (log10(eirp * 1000.0));
-			fprintf(fd2, " (%+.2f dBm)\n", dBm);
+			// fprintf(fd2, " (%+.2f dBm)\n", dBm);
 
-			// Rx gain
-			fprintf(fd2, "Transmitter EIRP minus Receiver gain: %.2f dBm\n", dBm-rxGain);
+			// // Rx gain
+			// fprintf(fd2, "Transmitter EIRP minus Receiver gain: %.2f dBm\n", dBm-rxGain);
 		}
 
-		fprintf(fd2, "\nSummary for the link between %s and %s:\n\n",
-			source.name, destination.name);
+		// fprintf(fd2, "\nSummary for the link between %s and %s:\n\n",
+		// 	source.name, destination.name);
 
-		fprintf(fd2, "%s antenna pattern towards %s: %.3f (%.2f dB)\n",
-				source.name, destination.name, pattern,
-				patterndB);
+		// fprintf(fd2, "%s antenna pattern towards %s: %.3f (%.2f dB)\n",
+		// 		source.name, destination.name, pattern,
+		// 		patterndB);
 
 		ReadPath(source, destination);	/* source=TX, destination=RX */
-		std::cout << "path lenght: " << path.length - 1 << std::endl;
 		/* Copy elevations plus clutter along
 		   path into the elev[] array. */
 
@@ -318,10 +318,10 @@ void PathReport(struct site source, struct site destination, char *name, int pro
 
 		elev[2] = path.elevation[0] * METERS_PER_FOOT;
 		elev[path.length + 1] = path.elevation[path.length - 1] * METERS_PER_FOOT;
-		//std::cout << "ending_points, elev[2]: " << elev[2] << std::endl; 
+		
 		azimuth = rint(Azimuth(source, destination));
 		
-		for (y = 2; y < (path.length - 1); y++) {	/* path.length-1 avoids LR error */
+		for (y = path.length - 1; y <= (path.length - 1); y++) {	/* path.length-1 avoids LR error */
 			distance = FEET_PER_MILE * path.distance[y];
 			source_alt = four_thirds_earth + source.alt + path.elevation[0];
 			dest_alt = four_thirds_earth + destination.alt +
@@ -383,6 +383,8 @@ void PathReport(struct site source, struct site destination, char *name, int pro
 			   shortest distance terrain can play a role in
 			   path loss. */
 
+			/* FUERZO A QUE ME CALCULE 1 PUNTO, EL QUE CAE DENTRO DEL AREA, Y ME QUITO LOS INTERMEDIOS*/
+			
 			elev[0] = y - 1;	/* (number of points - 1) */
 
 			/* Distance between elevation samples */
@@ -403,6 +405,8 @@ void PathReport(struct site source, struct site destination, char *name, int pro
 			// std::cout <<  "h_tx: " << source.alt * METERS_PER_FOOT << ", h_M: " << 
 			// 			 (path.elevation[y] * METERS_PER_FOOT) +
 			// 			 (destination.alt * METERS_PER_FOOT) << std::endl <<" d: "<<  dkm << ", pmenv: "<<  pmenv << std::endl;
+			
+		    //std::cout << "last: [" << path.lat[y] << ", " << path.lon[y] << "], elev: " << path.elevation[y] << std::endl;
 			switch (propmodel) {	
 			case 1:
 				//HATA 1, 2 & 3
@@ -418,162 +422,164 @@ void PathReport(struct site source, struct site destination, char *name, int pro
 				break;
 			}
 
-			if (block)
-				elevation =
-				    ((acos(cos_test_angle)) / DEG2RAD) - 90.0;
-			else
-				elevation =
-				    ((acos(cos_xmtr_angle)) / DEG2RAD) - 90.0;
+			// if (block)
+			// 	elevation =
+			// 	    ((acos(cos_test_angle)) / DEG2RAD) - 90.0;
+			// else
+			// 	elevation =
+			// 	    ((acos(cos_xmtr_angle)) / DEG2RAD) - 90.0;
 
-			/* Integrate the antenna's radiation
-			   pattern into the overall path loss. */
+			// /* Integrate the antenna's radiation
+			//    pattern into the overall path loss. */
 
-			x = (int)rint(10.0 * (10.0 - elevation));
+			// x = (int)rint(10.0 * (10.0 - elevation));
 
-			if (x >= 0 && x <= 1000) {
-				pattern =
-				    (double)LR.antenna_pattern[(int)azimuth][x];
+			// if (x >= 0 && x <= 1000) {
+			// 	pattern =
+			// 	    (double)LR.antenna_pattern[(int)azimuth][x];
 
-				if (pattern != 0.0){
-					patterndB = 20.0 * log10(pattern);
-				}else{
-					patterndB = 0.0;
-				}
-			}
+			// 	if (pattern != 0.0){
+			// 		patterndB = 20.0 * log10(pattern);
+			// 	}else{
+			// 		patterndB = 0.0;
+			// 	}
+			// }
 
-			else
-				patterndB = 0.0;
+			// else
+			// 	patterndB = 0.0;
 
-			total_loss = loss - patterndB;
+			// total_loss = loss - patterndB;
 
-			if (total_loss > maxloss)
-				maxloss = total_loss;
+			// if (total_loss > maxloss)
+			// 	maxloss = total_loss;
 
-			if (total_loss < minloss)
-				minloss = total_loss;
+			// if (total_loss < minloss)
+			// 	minloss = total_loss;
 			
-			std::cout << "loss: " << loss << ", total loss: " << total_loss << std::endl;
+			//std::cout << "loss: " << loss << ", lat: " << path.lat[y] << ", lon: " << path.lon[y] << ", dkm:" << dkm << std::endl;
+			
 		}
 
-		distance = Distance(source, destination);
+return loss;
+	// 	distance = Distance(source, destination);
 
-		if (distance != 0.0) {
-			free_space_loss =
-			    36.6 + (20.0 * log10(LR.frq_mhz)) +
-			    (20.0 * log10(distance));
-			fprintf(fd2, "Free space path loss: %.2f dB\n",
-				free_space_loss);
-		}
+	// 	if (distance != 0.0) {
+	// 		free_space_loss =
+	// 		    36.6 + (20.0 * log10(LR.frq_mhz)) +
+	// 		    (20.0 * log10(distance));
+	// 		fprintf(fd2, "Free space path loss: %.2f dB\n",
+	// 			free_space_loss);
+	// 	}
 
-		fprintf(fd2, "Computed path loss: %.2f dB\n", loss);
+	// 	fprintf(fd2, "Computed path loss: %.2f dB\n", loss);
 
 
-                if((loss*1.5) < free_space_loss){
-			fprintf(fd2,"Model error! Computed loss of %.1fdB is greater than free space loss of %.1fdB. Check your inuts for model %d\n",loss,free_space_loss,propmodel);
-                        fprintf(stderr,"Model error! Computed loss of %.1fdB is greater than free space loss of %.1fdB. Check your inuts for model %d\n",loss,free_space_loss,propmodel);
-                        return;
-                }
+    //             if((loss*1.5) < free_space_loss){
+	// 		fprintf(fd2,"Model error! Computed loss of %.1fdB is greater than free space loss of %.1fdB. Check your inuts for model %d\n",loss,free_space_loss,propmodel);
+    //                     fprintf(stderr,"Model error! Computed loss of %.1fdB is greater than free space loss of %.1fdB. Check your inuts for model %d\n",loss,free_space_loss,propmodel);
+    //                     return 0.0;
+    //             }
 
-		if (free_space_loss != 0.0)
-			fprintf(fd2,
-				"Attenuation due to terrain shielding: %.2f dB\n",
-				loss - free_space_loss);
+	// 	if (free_space_loss != 0.0)
+	// 		fprintf(fd2,
+	// 			"Attenuation due to terrain shielding: %.2f dB\n",
+	// 			loss - free_space_loss);
 
-		fprintf(fd2,"Total path loss including %s antenna pattern: %.2f dB\n",
-				source.name, total_loss);
+	// 	fprintf(fd2,"Total path loss including %s antenna pattern: %.2f dB\n",
+	// 			source.name, total_loss);
 
-		if (LR.erp != 0.0) {
-			field_strength =
-			    (139.4 + (20.0 * log10(LR.frq_mhz)) - total_loss) +
-			    (10.0 * log10(LR.erp / 1000.0));
+	// 	if (LR.erp != 0.0) {
+	// 		field_strength =
+	// 		    (139.4 + (20.0 * log10(LR.frq_mhz)) - total_loss) +
+	// 		    (10.0 * log10(LR.erp / 1000.0));
 
-			/* dBm is referenced to EIRP */
+	// 		/* dBm is referenced to EIRP */
 
-			rxp = eirp / (pow(10.0, (total_loss / 10.0)));
-			dBm = 10.0 * (log10(rxp * 1000.0));
-			power_density =
-			    (eirp /
-			     (pow
-			      (10.0, (total_loss - free_space_loss) / 10.0)));
-			/* divide by 4*PI*distance_in_meters squared */
-			power_density /= (4.0 * PI * distance * distance *
-					  2589988.11);
+	// 		rxp = eirp / (pow(10.0, (total_loss / 10.0)));
+	// 		dBm = 10.0 * (log10(rxp * 1000.0));
+	// 		power_density =
+	// 		    (eirp /
+	// 		     (pow
+	// 		      (10.0, (total_loss - free_space_loss) / 10.0)));
+	// 		/* divide by 4*PI*distance_in_meters squared */
+	// 		power_density /= (4.0 * PI * distance * distance *
+	// 				  2589988.11);
 
-			fprintf(fd2, "Field strength at %s: %.2f dBuV/meter\n",
-				destination.name, field_strength);
-			fprintf(fd2, "Signal power level at %s: %+.2f dBm\n",
-				destination.name, dBm);
-			fprintf(fd2,
-				"Signal power density at %s: %+.2f dBW per square meter\n",
-				destination.name, 10.0 * log10(power_density));
-			voltage =
-			    1.0e6 * sqrt(50.0 *
-					 (eirp /
-					  (pow
-					   (10.0,
-					    (total_loss - 2.14) / 10.0))));
-			fprintf(fd2,
-				"Voltage across 50 ohm dipole at %s: %.2f uV (%.2f dBuV)\n",
-				destination.name, voltage,
-				20.0 * log10(voltage));
+	// 		fprintf(fd2, "Field strength at %s: %.2f dBuV/meter\n",
+	// 			destination.name, field_strength);
+	// 		fprintf(fd2, "Signal power level at %s: %+.2f dBm\n",
+	// 			destination.name, dBm);
+	// 		fprintf(fd2,
+	// 			"Signal power density at %s: %+.2f dBW per square meter\n",
+	// 			destination.name, 10.0 * log10(power_density));
+	// 		voltage =
+	// 		    1.0e6 * sqrt(50.0 *
+	// 				 (eirp /
+	// 				  (pow
+	// 				   (10.0,
+	// 				    (total_loss - 2.14) / 10.0))));
+	// 		fprintf(fd2,
+	// 			"Voltage across 50 ohm dipole at %s: %.2f uV (%.2f dBuV)\n",
+	// 			destination.name, voltage,
+	// 			20.0 * log10(voltage));
 
-			voltage =
-			    1.0e6 * sqrt(75.0 *
-					 (eirp /
-					  (pow
-					   (10.0,
-					    (total_loss - 2.14) / 10.0))));
-			fprintf(fd2,
-				"Voltage across 75 ohm dipole at %s: %.2f uV (%.2f dBuV)\n",
-				destination.name, voltage,
-				20.0 * log10(voltage));
-		}
+	// 		voltage =
+	// 		    1.0e6 * sqrt(75.0 *
+	// 				 (eirp /
+	// 				  (pow
+	// 				   (10.0,
+	// 				    (total_loss - 2.14) / 10.0))));
+	// 		fprintf(fd2,
+	// 			"Voltage across 75 ohm dipole at %s: %.2f uV (%.2f dBuV)\n",
+	// 			destination.name, voltage,
+	// 			20.0 * log10(voltage));
+	// 	}
 
-		if (propmodel == 1) {
-			fprintf(fd2, "Longley-Rice model error number: %d",
-				errnum);
+	// 	if (propmodel == 1) {
+	// 		fprintf(fd2, "Longley-Rice model error number: %d",
+	// 			errnum);
 
-			switch (errnum) {
-			case 0:
-				fprintf(fd2, " (No error)\n");
-				break;
+	// 		switch (errnum) {
+	// 		case 0:
+	// 			fprintf(fd2, " (No error)\n");
+	// 			break;
 
-			case 1:
-				fprintf(fd2,
-					"\n  Warning: Some parameters are nearly out of range.\n");
-				fprintf(fd2,
-					"  Results should be used with caution.\n");
-				break;
+	// 		case 1:
+	// 			fprintf(fd2,
+	// 				"\n  Warning: Some parameters are nearly out of range.\n");
+	// 			fprintf(fd2,
+	// 				"  Results should be used with caution.\n");
+	// 			break;
 
-			case 2:
-				fprintf(fd2,
-					"\n  Note: Default parameters have been substituted for impossible ones.\n");
-				break;
+	// 		case 2:
+	// 			fprintf(fd2,
+	// 				"\n  Note: Default parameters have been substituted for impossible ones.\n");
+	// 			break;
 
-			case 3:
-				fprintf(fd2,
-					"\n  Warning: A combination of parameters is out of range for this model.\n");
-				fprintf(fd2,
-					"  Results should be used with caution.\n");
-				break;
+	// 		case 3:
+	// 			fprintf(fd2,
+	// 				"\n  Warning: A combination of parameters is out of range for this model.\n");
+	// 			fprintf(fd2,
+	// 				"  Results should be used with caution.\n");
+	// 			break;
 
-			default:
-				fprintf(fd2,
-					"\n  Warning: Some parameters are out of range for this model.\n");
-				fprintf(fd2,
-					"  Results should be used with caution.\n");
-			}
-		}
+	// 		default:
+	// 			fprintf(fd2,
+	// 				"\n  Warning: Some parameters are out of range for this model.\n");
+	// 			fprintf(fd2,
+	// 				"  Results should be used with caution.\n");
+	// 		}
+	// 	}
 
-	}
+	// }
 
-	ObstructionAnalysis(source, destination, LR.frq_mhz, fd2);
-	fclose(fd2);
-
+	// ObstructionAnalysis(source, destination, LR.frq_mhz, fd2);
+	// fclose(fd2);
+	// std::cout << std::endl;
 	// fprintf(stderr,
 	// 	"Path loss (dB), Received Power (dBm), Field strength (dBuV):\n%.1f\n%.1f\n%.1f",
 	// 	loss, dBm, field_strength);
-	std::cout << std::endl;
+	
 	// /* Skip plotting the graph if ONLY a path-loss report is needed. */
 
 	// if (graph_it) {
@@ -670,5 +676,4 @@ void PathReport(struct site source, struct site destination, char *name, int pro
 	// 		fprintf(stderr,
 	// 			"\n*** ERROR: Error occurred invoking gnuplot!\n");
 	// }
-
 }

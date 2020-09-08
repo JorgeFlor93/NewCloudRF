@@ -1,0 +1,36 @@
+
+		--==[ Path Profile Analysis ]==--
+
+Transmitter site: 
+Site location: 51.3490, -2.2299
+Ground elevation: 157.48 feet AMSL
+Antenna height: 100.00 feet AGL / 257.48 feet AMSL
+Distance to : 11.12 miles
+Azimuth to : 356.51 degrees grid
+Downtilt angle to : +0.1282 degrees
+
+Receiver site: 
+Site location: 51.4488, -2.2397
+Ground elevation: 469.16 feet AMSL
+Antenna height: 2.00 feet AGL / 471.16 feet AMSL
+Distance to : 11.12 miles
+Azimuth to : 176.50 degrees grid
+Downtilt angle to : -0.2890 degrees
+
+
+Propagation model: Okumura-Hata
+Model sub-type: Rural / Optimistic
+Earth's Dielectric Constant: 15.000
+Earth's Conductivity: 0.005 Siemens/meter
+Atmospheric Bending Constant (N-units): 301.000 ppm
+Frequency: 5000.000 MHz
+Radio Climate: 5 (Continental Temperate)
+Polarisation: 1 (Vertical)
+Fraction of Situations: 50.0%
+Fraction of Time: 50.0%
+
+Summary for the link between  and :
+
+ antenna pattern towards : 0.000 (-inf dB)
+ern towards P
+ój>: 0.000 (-inf dB)

@@ -3,8 +3,8 @@ CF=-Wall -g
 MODEL=models/
 BUILD=build/
 
-main: newcloudrf.cc ${MODEL}fspl.o ${MODEL}hata.o inputs.o outputs.o main.o distance.o tiles.o common.h 
-	${CC} ${CF} newcloudrf.cc ${MODEL}fspl.o ${MODEL}hata.o ${BUILD}inputs.o ${BUILD}outputs.o ${BUILD}distance.o ${BUILD}tiles.o ${BUILD}main.o -o main
+main: appPathloss.cc ${MODEL}fspl.o ${MODEL}hata.o inputs.o outputs.o main.o distance.o tiles.o common.h 
+	${CC} ${CF} appPathloss.cc ${MODEL}fspl.o ${MODEL}hata.o ${BUILD}inputs.o ${BUILD}outputs.o ${BUILD}distance.o ${BUILD}tiles.o ${BUILD}main.o -o main
 
 fspl.o: ${MODEL}fspl.cc ${MODEL}fspl.hh
 	${CC} ${CF} -c ${MODEL}fspl.cc -o ${MODEL}fspl.o
@@ -28,4 +28,4 @@ tiles.o: tiles.cc tiles.hh
 	${CC} ${CF} -c tiles.cc -o ${BUILD}tiles.o
 
 clean:
-	rm -f main ${MODEL}*.o ${TOOLS}*.o ${BUILD}*.o *.o
+	rm -f main ${MODEL}*.o ${TOOLS}*.o ${BUILD}*.o *.o *.gp *.png

@@ -10,6 +10,7 @@
 #include <string.h>
 #include <stdio.h>
 #include "common.h"
+#include <vector>
 
 int ReduceAngle(double angle);
 double LonDiff(double lon1, double lon2);
@@ -31,16 +32,10 @@ void ObstructionAnalysis(struct site xmtr, struct site rcvr, double f, FILE *out
 void getMain();
 
 #define DEG2RAD	1.74532925199e-02
-/*
-struct site {
-	double lat;
-	double lon;
-	float alt;
-};*/
 
 char *dec2dms(double decimal);
 double miles_to_km(double miles);
-
+std::vector<int> LatLongMinMax(double tx_lon, double bot_lon, double tx_lat, double top_lat);
 
 
 void free_elev(void);
