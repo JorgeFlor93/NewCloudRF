@@ -9,7 +9,7 @@
 // 	      unsigned char ngs, struct site *xmtr, unsigned char txsites);
 // void DoLOS(char *filename, unsigned char geo, unsigned char kml,
 // 	   unsigned char ngs, struct site *xmtr, unsigned char txsites);
-double PathReport(struct site source, struct site destination, char *name, int propmodel, int pmenv, double rxGain);
+double PathReport(struct site source, struct site destination, int propmodel, int pmenv);
 // void SeriesData(struct site source, struct site destination, char *name,
 // 		unsigned char fresnel_plot, unsigned char normalised);
 

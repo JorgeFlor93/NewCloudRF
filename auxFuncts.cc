@@ -36,11 +36,11 @@ double version = 3.10;
 #include "models/los.hh"
 #include "models/pel.hh"
 #include "image.hh"
-#include "main.hh"
+#include "auxFuncts.hh"
 
-/*RESOLUTION*/
+/*RESOLUTION SDF*/
 int MAXPAGES = 10*10;
-int IPPD = 1200;
+int IPPD = 1200; // or 3600
 int ARRAYSIZE = (MAXPAGES * IPPD) + 10;
 
 char string[255], sdf_path[255], udt_file[255], opened = 0, gpsav =
@@ -1099,9 +1099,7 @@ std::vector<int> LatLongMinMax(double tx_lon, double bot_lon, double tx_lat, dou
 	return limits;
 }
 
-void getMain(){
-
-	char *az_filename, *el_filename, *udt_file = NULL;
+void getDefaults(){
 
 	dbm = 0;
 	gpsav = 0;
@@ -1111,7 +1109,7 @@ void getMain(){
 	forced_erp = -1.0;
 	forced_freq = 0.0;
 	sdf_path[0] = 0;
-	udt_file = NULL;
+
 	path.length = 0;
 	fzone_clearance = 0.6;
 	contour_threshold = 0;

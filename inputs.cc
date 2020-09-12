@@ -6,7 +6,7 @@
 #include <errno.h>
 #include <limits.h>
 #include "common.h"
-#include "main.hh"
+#include "auxFuncts.hh"
 #include "tiles.hh"
 #include "inputs.hh"
 
