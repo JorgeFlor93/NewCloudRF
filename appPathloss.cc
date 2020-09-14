@@ -27,13 +27,14 @@ void displayCoord(Coord& coord);
 void displayPar(Pairtxrx& vc);
 void load_resvar();
 void getTopoData(double minlon, double maxlon, double minlat, double maxlat);
+void displayPar(std::vector<Pairtxrx> vpairs, std::vector<Coord> vtx);
 
 int main(int argc, char *argv[]){
 
     /* Tx_h y Rx_h, freq, distance */
-    float f = 5000, d, height_Base = 100, height_Mobile = 2; 
+    float f = 5000, height_Mobile = 2; 
     /* SDF atributtes */  
-    int result, pmenv = 1; //
+    int result, pmenv = 3; // OPEN
     
     /*Variables del programa*/
     int modeChoosen = 0;
@@ -42,7 +43,6 @@ int main(int argc, char *argv[]){
     double inlat;
     double inlon;
     float inalt;
-    double Ploss;
     char next;
 
     std::vector<Eigen::Matrix<double, 1, 2>> point_list; //vector almacen puntos area
@@ -95,8 +95,8 @@ int main(int argc, char *argv[]){
         }
 
         std::cout << "1. Vector Antennas to point Rx" << "\n";
-        std::cout << "2. Line" << "\n";
-        std::cout << "3. Area" << "\n";
+        std::cout << "2. Area" << "\n";
+        std::cout << "3. Line" << "\n";
         std::cout << "Choose mode: " << "\n";
         std::cin >> modeChoosen;
 
@@ -114,18 +114,18 @@ int main(int argc, char *argv[]){
 
             for(int i = 0; i < num_antennas; i++){
                 vtrx.assignPar(vtx.at(i), rx);
-                vtrx.setLoss(PathReport(vtx.at(i).getStruct(), rx.getStruct(), model, 1));
+                vtrx.setLoss(PathReport(vtx.at(i).getStruct(), rx.getStruct(), model, pmenv));
                 vpairs.push_back(vtrx);
             }
             
             for(auto vectorit = vpairs.begin(); vectorit != vpairs.end(); ++vectorit){
-                std::cout << "tx[" << vectorit->getTx().getLat() << ", "<< vectorit->getTx().getLon() << 
-                "]-rx[" << vectorit->getRx().getLat() << ", " << vectorit->getRx().getLon() << "], Loss: " << vectorit->getLoss() << std::endl;
+                std::cout << "Tx[" << vectorit->getTx().getLat() << ", "<< vectorit->getTx().getdisLon() << 
+                "], Rx[" << vectorit->getRx().getLat() << ", " << vectorit->getRx().getdisLon() << "], Loss: " << vectorit->getLoss() << std::endl;
             }
                                 
         }
-        else if(modeChoosen == 3){
-            std::vector<Coord> varea;
+        else if(modeChoosen == 2){
+            std::vector<Coord> varea; //vector con todas las coordenadas del área.
 
             std::cout << "Top-left area point: "; std::cout << "\n";
             readCoord(inlat, inlon, inalt);
@@ -139,20 +139,76 @@ int main(int argc, char *argv[]){
 
             point_list = get_area(tl.getLat(), tl.getLon(), br.getLat(), br.getLon()); 
             for (int i = 0; i < point_list.size(); i++){   
-                p.assignCoord(point_list[i](0,0), point_list[i](0,1), height_Mobile);   
+                p.assignCoord(point_list[i](0,0), -1*point_list[i](0,1), tl.getAlt());  
                 varea.push_back(p);         
+            }  
+            for(int i = 0; i < num_antennas; i++){ //Por cada antena se calculan las pérdidas al área
+                for(int j = 0; j < varea.size(); j++){
+                    vtrx.assignPar(vtx.at(i), varea.at(j));
+                    vtrx.setLoss(PathReport(vtx.at(i).getStruct(), varea.at(j).getStruct(), model, pmenv));
+                    vpairs.push_back(vtrx);
+                }  
             }
-        
-            
+            displayPar(vpairs, vtx);
+            varea.clear();
         }
-
-        std::cout << "Continue? (y/n)" << std::endl;
+        vtx.clear();// delete and resize 0.
+        vpairs.clear();
+        std::cout << "Continue Pathloss? (y/n)" << std::endl;
         std::cin >> next;
-       if(next == 'n'){
+        if(next == 'n'){
             run = false;
         }
+        next = 'y';
+        free_dem();
+        free_elev();
+        free_path();
+        fflush(stderr);
     }
+    return 0;
+}
 
+void displayPar(std::vector<Pairtxrx> vpairs, std::vector<Coord> vtx){
+    int i = 0;
+    for(auto vectoritx = vtx.begin(); vectoritx != vtx.end(); ++vectoritx){
+        std::cout << "Tx" << i << "[" << vectoritx->getLat() << ", "<< vectoritx->getdisLon() << "]" << std::endl;
+        for(auto vectorit = vpairs.begin(); vectorit != vpairs.end(); ++vectorit){
+            std::cout << "[" << vectorit->getRx().getLat() << ", " << vectorit->getRx().getdisLon() << "], Loss: " << vectorit->getLoss() << std::endl;
+        }
+        ++i;
+        std::cout << std::endl;
+    }
+}
+
+void readCoord(double& lat, double& lon, float& alt){
+    std::cout << "Latitude: "; std::cin >> lat;
+    std::cout << "Longitude: "; std::cin >> lon;
+    std::cout << "Height: "; std::cin >> alt;
+}
+
+void displayCoord(Coord& coord){
+    double lat = coord.getLat();
+    double lon = coord.getdisLon();
+    float alt = coord.getAlt();
+    std::cout << "{" << lat << ", "<< lon << ", "<< alt <<"}" << "\n"; 
+}
+
+void load_resvar(){
+    /*load variables de resolución*/
+    ppd = (double)ippd;
+    yppd=ppd; 
+    dpp = 1 / ppd;
+ 	mpi = ippd-1;
+}
+    
+void getTopoData(double minlon, double maxlon, double minlat, double maxlat){
+    std::vector<int> limits;
+    int result;
+    limits = LatLongMinMax(minlon, maxlon, minlat, maxlat);	
+    result = LoadTopoData(limits[0], limits[1], limits[2], limits[3]); // Se cargan las estructuras dem según la info del archivo del terreno
+    load_resvar();
+    std::cout << "result: " << result << std::endl;
+}
     /* CALCULAR PUNTOS AREA
     * Libreria Eigen para manejar matrices de vectores. 
     * Posteriormente se convierte a struct site para poder ser manipulados
@@ -160,28 +216,28 @@ int main(int argc, char *argv[]){
 
     
 
-    point_list = get_area(antennas[1].lat, antennas[1].lon, antennas[2].lat, antennas[2].lon); 
+    // point_list = get_area(antennas[1].lat, antennas[1].lon, antennas[2].lat, antennas[2].lon); 
     
-        /* LOS CONVIERTO A struct site
-           y aplico el *= -1 para q pueda ser leidos los datos sdf
-        */
-    struct site converted_point[point_list.size()];  
-    std::cout.precision(8);
-    for (int i = 0; i < point_list.size(); i++){   
-        converted_point[i].lat = point_list[i](0,0);
-        converted_point[i].lon = point_list[i](0,1); 
-        converted_point[i].lon *= -1; //SIEMPRE
-        if (converted_point[i].lon < 0.0)
-            converted_point[i].lon *= 360.0; 
-        converted_point[i].alt = height_Mobile;
-        //std::cout << "point " << i+1 << ": [" << converted_point[i].lat << ", " << converted_point[i].lon << "]" << std::endl;   
-    }
+    //     /* LOS CONVIERTO A struct site
+    //        y aplico el *= -1 para q pueda ser leidos los datos sdf
+    //     */
+    // struct site converted_point[point_list.size()];  
+    // std::cout.precision(8);
+    // for (int i = 0; i < point_list.size(); i++){   
+    //     converted_point[i].lat = point_list[i](0,0);
+    //     converted_point[i].lon = point_list[i](0,1); 
+    //     converted_point[i].lon *= -1; //SIEMPRE
+    //     if (converted_point[i].lon < 0.0)
+    //         converted_point[i].lon *= 360.0; 
+    //     converted_point[i].alt = height_Mobile;
+    //     //std::cout << "point " << i+1 << ": [" << converted_point[i].lat << ", " << converted_point[i].lon << "]" << std::endl;   
+    // }
 
-    /* LOAD SDF INFO */
-        /*quito longitud negativa en tx*/
-    antennas[0].lon *= -1;
-    if (antennas[0].lon < 0.0)
-        antennas[0].lon += 360.0; //Necesario para leer las longitudes ESTE.
+    // /* LOAD SDF INFO */
+    //     /*quito longitud negativa en tx*/
+    // antennas[0].lon *= -1;
+    // if (antennas[0].lon < 0.0)
+    //     antennas[0].lon += 360.0; //Necesario para leer las longitudes ESTE.
 
         /* 
         Límites del cálculo, max and min lat and lon
@@ -216,44 +272,6 @@ int main(int argc, char *argv[]){
     // for(auto vectorit = vloss.begin(); vectorit != vloss.end(); ++vectorit){
     //     std::cout << "{"<<vectorit->lat <<", " << vectorit->lon << ", "<< vectorit->loss << "}"<< std::endl;
     // }
-   
-    free_dem();
-    free_elev();
-    free_path();
-    fflush(stderr);
-    return 0;
-}
-
-
-void readCoord(double& lat, double& lon, float& alt){
-    std::cout << "Latitude: "; std::cin >> lat;
-    std::cout << "Longitude: "; std::cin >> lon;
-    std::cout << "Height: "; std::cin >> alt;
-}
-
-void displayCoord(Coord& coord){
-    double lat = coord.getLat();
-    double lon = coord.getLon();
-    float alt = coord.getAlt();
-    std::cout << "{" << lat << ", "<< lon << ", "<< alt <<"}" << "\n"; 
-}
-
-void load_resvar(){
-    /*load variables de resolución*/
-    ppd = (double)ippd;
-    yppd=ppd; 
-    dpp = 1 / ppd;
- 	mpi = ippd-1;
-}
-    
-void getTopoData(double minlon, double maxlon, double minlat, double maxlat){
-    std::vector<int> limits;
-    int result;
-    limits = LatLongMinMax(minlon, maxlon, minlat, maxlat);	
-    result = LoadTopoData(limits[0], limits[1], limits[2], limits[3]); // Se cargan las estructuras dem según la info del archivo del terreno
-    load_resvar();
-    std::cout << "result: " << result << std::endl;
-}
 
 //  std::cout << "max_lon: " << max_lon << ", min_lon: " << min_lon << ", max_lat: " << max_lat << ", min_lat: " << min_lat << std::endl;
 

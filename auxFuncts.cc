@@ -55,7 +55,7 @@ double earthradius, max_range = 0.0, forced_erp, dpp, ppd, yppd,
 int ippd, mpi, 
     max_elevation = -32768, min_elevation = 32768, bzerror, contour_threshold,
     pred, pblue, pgreen, ter, multiplier = 256, debug = 0, loops = 100, jgets =
-    0, MAXRAD, hottest = 0, height, width, resample = 0;
+    0, hottest = 0, height, width, resample = 0;
 
 unsigned char got_elevation_pattern, got_azimuth_pattern, metric = 0, dbm = 0;
 

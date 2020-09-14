@@ -10,9 +10,10 @@ class Coord{
     bool validCoord(double lat, double lon, float alt);
     std::vector<double> getPos();
     double getLat();
-    double getLon();
+    double getdisLon();
+    double getLon(); 
     float getAlt();
     struct site getStruct();
     private:
-    struct site point; // lat, lon, alt , loss del punto
+    struct site point; // lat, lon, alt , loss , dislon del punto
 };

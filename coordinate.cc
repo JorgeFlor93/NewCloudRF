@@ -4,6 +4,10 @@
 
 Coord::Coord(double lat, double lon, float alt) {
     this->point.lat = lat;
+    this->point.dislon = lon;
+    lon *= -1;
+    if (lon < 0.0)
+        lon += 360.0; //Necesario para leer las longitudes ESTE y cargar su sdf.
     this->point.lon = lon;
     this->point.alt = alt;
 }
@@ -15,11 +19,15 @@ struct site Coord::getStruct(){
 std::vector<double> Coord::getPos(){
     std::vector<double> Pos;
     Pos.push_back(this->point.lat);
-    Pos.push_back(this->point.lon);
+    Pos.push_back(this->point.dislon);
 }
 
 double Coord::getLat(){
     return this->point.lat;    
+}
+
+double Coord::getdisLon(){
+    return this->point.dislon;
 }
 
 double Coord::getLon(){
@@ -36,6 +44,10 @@ bool Coord::assignCoord(double lat, double lon, float alt){
         return false;
     }
     this->point.lat = lat;
+    this->point.dislon = lon;
+    lon *= -1;
+    if (lon < 0.0)
+        lon += 360.0; //Necesario para leer las longitudes ESTE y cargar su sdf.
     this->point.lon = lon;
     this->point.alt = alt;
     return true;

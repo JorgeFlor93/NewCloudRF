@@ -1,10 +1,11 @@
 
 #include "distance.hh"
 
-/* Resolution (point-to-point distance)*/ 
-// 0.00208333333 -> 225m
-// 0.0002777778 -> 30m
-// 0.000458333 -> 50m
+/* Resolution (point-to-point distance) 
+* 0.00208333333 -> 225m
+* 0.0002777778 -> 30m
+* 0.000458333 -> 50m
+*/
 
 double lat_res = 0.0004583333;
 double lng_res = 0.0004583333;

@@ -42,6 +42,7 @@ struct site {
 	double lon;
 	float alt;
 	double loss;
+	double dislon;
 	char name[50];
 	char filename[255];
 };
