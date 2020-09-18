@@ -565,7 +565,6 @@ int LoadSDF_SDF(char *name)
 		   Each .sdf tile contains 1200x1200 = 1.44M 'points'
 		   Each point is sampled for 1200 resolution!
 		 */
-		
 		for (x = 0; x < ippd; x++) {
 			for (y = 0; y < ippd; y++) {
 
@@ -577,7 +576,7 @@ int LoadSDF_SDF(char *name)
 				if (fgets(line, sizeof(line), fd) != NULL) {
 					data = atoi(line);
 				}
-
+				
 				dem[indx].data[x][y] = data;
 				dem[indx].signal[x][y] = 0;
 				dem[indx].mask[x][y] = 0;

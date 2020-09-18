@@ -293,12 +293,10 @@ double GetElevation(struct site location)
 	char found;
 	int x = 0, y = 0, indx;
 	double elevation;
-
+	//std::cout << "getlat: " << location.lat << ", getlon: " << location.lon << std::endl;
 	for (indx = 0, found = 0; indx < MAXPAGES && found == 0;) {
-		// std::cout << "loc_lat" << location.lat << std::endl;
 		x = (int)rint(ppd * (location.lat - dem[indx].min_north));
-		y = mpi - (int)rint(yppd *
-			      (LonDiff(dem[indx].max_west, location.lon)));
+		y = mpi - (int)rint(yppd * (LonDiff(dem[indx].max_west, location.lon)));
 		
 
 		if (x >= 0 && x <= mpi && y >= 0 && y <= mpi)
@@ -378,8 +376,6 @@ double miles_to_km(double miles){
 
 double Distance(struct site site1, struct site site2)
 {
-	/* This function returns the great circle distance
-	   in miles between any two site locations. */
 
 	double lat1, lon1, lat2, lon2, distance;
 
@@ -503,7 +499,6 @@ void ReadPath(struct site source, struct site destination)
 		path_length = sqrt((dx * dx) + (dy * dy));
 		miles_per_sample = total_distance / path_length;
 	}
-
 	else {
 		//std::cout << "1" << std::endl;
 		c = 0;

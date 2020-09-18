@@ -39,8 +39,9 @@ struct dem {
 
 struct site {
 	double lat;
-	double lon;
-	float alt;
+	double lon; 
+	float txalt; //Altura de la antena 
+	float alt; // Altura de la antena respecto del nivel del mar, txalt+GetElevation	
 	double loss;
 	double dislon;
 	char name[50];

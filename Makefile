@@ -3,8 +3,8 @@ CF=-Wall -g
 MODEL=models/
 BUILD=build/
 
-main: appPathloss.cc ${MODEL}fspl.o ${MODEL}hata.o inputs.o outputs.o auxFuncts.o distance.o tiles.o coordinate.o txrx.o common.h 
-	${CC} ${CF} appPathloss.cc ${MODEL}fspl.o ${MODEL}hata.o ${BUILD}inputs.o ${BUILD}outputs.o ${BUILD}distance.o ${BUILD}tiles.o ${BUILD}coordinate.o ${BUILD}txrx.o ${BUILD}auxFuncts.o -o main
+main: appPathloss.cc ${MODEL}fspl.o ${MODEL}hata.o inputs.o lossreport.o auxFuncts.o distance.o tiles.o coordinate.o txrx.o common.h 
+	${CC} ${CF} appPathloss.cc ${MODEL}fspl.o ${MODEL}hata.o ${BUILD}inputs.o ${BUILD}lossreport.o ${BUILD}distance.o ${BUILD}tiles.o ${BUILD}coordinate.o ${BUILD}txrx.o ${BUILD}auxFuncts.o -o main
 
 fspl.o: ${MODEL}fspl.cc ${MODEL}fspl.hh
 	${CC} ${CF} -c ${MODEL}fspl.cc -o ${MODEL}fspl.o
@@ -18,8 +18,8 @@ auxFuncts.o: auxFuncts.cc auxFuncts.hh
 inputs.o: inputs.cc inputs.hh 
 	${CC} ${CF} -c inputs.cc -o ${BUILD}inputs.o
 
-outputs.o: outputs.cc outputs.hh 
-	${CC} ${CF} -c outputs.cc -o ${BUILD}outputs.o
+lossreport.o: lossreport.cc lossreport.hh 
+	${CC} ${CF} -c lossreport.cc -o ${BUILD}lossreport.o
 
 distance.o: distance.cc distance.hh
 	${CC} ${CF} -c distance.cc -o ${BUILD}distance.o
